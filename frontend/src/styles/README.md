@@ -1,0 +1,1 @@
+These are for styling our project so we can easily change how it looks
