@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 import sqlite3
 from components.scraper import scrape_data
 
@@ -25,6 +25,22 @@ def get_items():
     items = [{"id": row[0], "title": row[1]} for row in c.fetchall()]
     conn.close()
     return jsonify(items)
+
+@app.route('/user', methods=['POST'])
+def handle_user():
+    data = request.get_json()
+    
+    if data and data.get("command") == "create":
+        # Extract the user data
+        user_id = data.get("id")
+        username = data.get("username")
+        email = data.get("email")
+        password = data.get("password")
+        
+        # TODO: Still needs to pass data to database, for now just returns success message
+        return jsonify({"message": "User created successfully", "user": username}), 201
+    
+    return jsonify({"error": "Invalid command or data"}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)
