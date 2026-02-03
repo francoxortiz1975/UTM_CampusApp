@@ -1,5 +1,5 @@
 class User:
-    """Simple user model holding essential user details."""
+    """Simple user class holding essential user details."""
 
     id: int
     username: str
