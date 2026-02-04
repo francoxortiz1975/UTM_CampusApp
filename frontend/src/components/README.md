@@ -1,0 +1,1 @@
+These are for components that get imported to be used in pages

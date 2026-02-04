@@ -1,0 +1,1 @@
+If you have a type that is needed in multipule files then you can create a file for it here and import it.
