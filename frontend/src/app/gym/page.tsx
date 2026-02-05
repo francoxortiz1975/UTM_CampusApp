@@ -37,12 +37,13 @@ const getColor = (p: number) =>
   p < 60 ? 'text-yellow-600' :
   'text-red-600';
 
-const today = new Date().toLocaleDateString(undefined, {
+const today = () => {
+    return new Date().toLocaleDateString(undefined, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-});
+});}
 
 const getCurrentTimeLabel = () => {
   const now = new Date();
@@ -66,7 +67,7 @@ function GymCard({ gym }: {gym: string}){
             </div>
 
             <div>
-              <h2 className="text-xs items-center font-Menlo text-gray-400">{today}</h2>
+              <h2 className="text-xs items-center font-Menlo text-gray-400">{today()}</h2>
             </div>
 
             <div className="flex items-center space-x-2 text-xl font-semibold">
