@@ -2,6 +2,35 @@
 
 import Header from '../../components/Header';
 import { useState } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
+
+//Temporary dummy data
+const dummyCapacityData = [
+  { time: '7 AM', capacity: 10 },
+  { time: '8 AM', capacity: 35 },
+  { time: '9 AM', capacity: 55 },
+  { time: '10 AM', capacity: 70 },
+  { time: '11 AM', capacity: 60 },
+  { time: '12 PM', capacity: 45 },
+  { time: '1 PM', capacity: 80 },
+  { time: '2 PM', capacity: 65 },
+  { time: '3 PM', capacity: 70 },
+  { time: '4 PM', capacity: 90 },
+  { time: '5 PM', capacity: 100 },
+  { time: '6 PM', capacity: 70 },
+  { time: '7 PM', capacity: 40 },
+  { time: '8 PM', capacity: 20 },
+  { time: '9 PM', capacity: 10 },
+  { time: '10 PM', capacity: 10 },
+];
 
 const getColor = (p: number) =>
   p < 30 ? 'text-green-600' :
@@ -13,11 +42,22 @@ const today = new Date().toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  });
+});
+
+const getCurrentTimeLabel = () => {
+  const now = new Date();
+  let hour = now.getHours();
+
+  const suffix = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+
+  return `${hour} ${suffix}`;
+};
 
 function GymCard({ gym }: {gym: string}){
   if (!gym) return null;
-
+  const currentTime = getCurrentTimeLabel();
   return (
     <div className="bg-white rounded-xl shadow p-6">
           <div className="flex justify-between items-start mb-4">
@@ -26,7 +66,7 @@ function GymCard({ gym }: {gym: string}){
             </div>
 
             <div>
-              <h2 className="text-xs font-Menlo text-gray-400">{today}</h2>
+              <h2 className="text-xs items-center font-Menlo text-gray-400">{today}</h2>
             </div>
 
             <div className="flex items-center space-x-2 text-xl font-semibold">
@@ -36,10 +76,33 @@ function GymCard({ gym }: {gym: string}){
           </div>
 
           {/* Chart Placeholder */}
-          <div className="bg-gray-50 border rounded-lg h-48 flex items-center justify-center mb-4">
-            <span className="text-gray-400">
+          <div className="flex items-center justify-center">
+            <span className="text-gray-800">
               {gym} - Projected Activity Chart
             </span>
+          </div>
+
+          {/* Capacity vs Time Graph */}
+          <div className="w-full h-56 mb-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dummyCapacityData}>
+                <XAxis dataKey="time" />
+                <YAxis domain={[0,100]} tickFormatter={(v) => `${v}%`} />
+                <Tooltip formatter={(v: number) => `${v}%`} />
+                <Line
+                  type="monotone"
+                  dataKey="capacity"
+                  strokeWidth={3}
+                  dot={{r:4}}
+                />
+                <ReferenceLine
+                  x={currentTime}
+                  stroke="red"
+                  strokeDasharray="3 3"
+                  label="Now"
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Opening Hours */}
