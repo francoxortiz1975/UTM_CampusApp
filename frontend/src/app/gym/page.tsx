@@ -63,7 +63,7 @@ function GymCard({ gym }: {gym: string}){
     <div className="bg-white rounded-xl shadow p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-semibold">{gym}</h2>
+              <h2 className="text-xl text-black font-semibold">{gym}</h2>
             </div>
 
             <div>
