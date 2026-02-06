@@ -70,7 +70,7 @@ function GymCard({ gym }: {gym: string}){
               <h2 className="text-xs items-center font-Menlo text-gray-400">{today()}</h2>
             </div>
 
-            <div className="flex items-center space-x-2 text-xl font-semibold">
+            <div className="flex items-center space-x-2 text-black text-xl font-semibold">
               <span>RAWC 📍</span>
             </div>
           </div>
@@ -109,10 +109,10 @@ function GymCard({ gym }: {gym: string}){
           <div className="text-sm text-gray-600 mb-4">
             <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
             <p>
-              Monday - Friday: <span className="font-medium">7am - 10pm</span>
+              Monday - Friday: <span className="font-medium text-black">7am - 10pm</span>
             </p>
             <p>
-              Saturday/Sunday: <span className="font-medium">10am - 5pm</span>
+              Saturday/Sunday: <span className="font-medium text-black">10am - 5pm</span>
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export default function Gym() {
 
         {/* Projected Capactities */}
         <div className="bg-white rounded-xl shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-lg font-semibold mb-4 text-black">
             Current Projected Capacities
           </h3>
 
@@ -160,7 +160,7 @@ export default function Gym() {
                   onClick={() => setSelectedGym(gym.name)}
                   className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                 >
-                  <span className="text-sm font-medium text-black-900">
+                  <span className="text-sm font-medium text-black">
                     {gym.name}
                   </span>
 
