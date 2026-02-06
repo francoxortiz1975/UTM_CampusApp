@@ -71,8 +71,7 @@ function GymCard({ gym }: {gym: string}){
             </div>
 
             <div className="flex items-center space-x-2 text-xl font-semibold">
-              <span>RAWC</span>
-              <span className="w-3 h-3 rounded-full bg-gray-800" />
+              <span>RAWC 📍</span>
             </div>
           </div>
 
@@ -161,7 +160,7 @@ export default function Gym() {
                   onClick={() => setSelectedGym(gym.name)}
                   className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                 >
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-black-900">
                     {gym.name}
                   </span>
 
