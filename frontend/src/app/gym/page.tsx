@@ -2,6 +2,7 @@
 
 import Header from '../../components/Header';
 import { useState } from 'react';
+import Modal from '../../components/Modal';
 import {
   LineChart,
   Line,
@@ -59,6 +60,8 @@ const getCurrentTimeLabel = () => {
 function GymCard({ gym }: {gym: string}){
   if (!gym) return null;
   const currentTime = getCurrentTimeLabel();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [capacity, setCapacity] = useState(50);
   return (
     <div className="bg-white rounded-xl shadow p-6">
           <div className="flex justify-between items-start mb-4">
@@ -118,10 +121,49 @@ function GymCard({ gym }: {gym: string}){
 
           {/* Report Button */}
           <div className="flex justify-end">
-            <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+              >
               ▶ Report Status
             </button>
           </div>
+
+          <Modal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            title="Report Gym Status"
+          >
+            <p className="text-sm text-gray-600 mb-4">
+              Let us know how full the gym feels right now.
+            </p>
+
+            <div className="space-y-2">
+              <div className="mt-3 text-center">
+                <span className="text-sm text-black">Current Capacity:</span>
+
+                <div
+                  className={`text-2xl font-bold transition-colors duration-200 ${getColor(
+                    capacity
+                  )}`}
+                >
+                  {capacity}%
+                </div>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={capacity}
+                onChange={(e) => setCapacity(Number(e.target.value))}
+                className={`
+                  w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300
+                  ${getColor(capacity)}
+                `}
+              />
+            </div>
+          </Modal>
         </div>
   )
 }

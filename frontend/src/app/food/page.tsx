@@ -2,6 +2,7 @@
 
 import Header from '../../components/Header';
 import { useState } from 'react';
+import Modal from '../../components/Modal';
 
 interface Restaurant {
   id: string;
@@ -74,6 +75,8 @@ const today = new Date().toLocaleDateString(undefined, {
 
 function FoodCard({ data }: { data: Restaurant }) {
   if (!data) return null;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [waitMinutes, setWaitMinutes] = useState(15);
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -118,10 +121,51 @@ function FoodCard({ data }: { data: Restaurant }) {
 
       {/* Report Button */}
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition"
+          >
           ▶ Report Status
         </button>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Report Food Wait Time"
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          Let us know how long you waited.
+        </p>
+
+        <div className="space-y-2">
+          <div className="mt-3 text-center">
+            <span className="text-sm text-black">Estimated Wait:</span>
+
+            <div
+              className={`text-2xl font-bold transition-colors duration-200 ${getWaitColour(
+                waitMinutes
+              )}`}
+            >
+              {waitMinutes} mins
+            </div>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={60}
+            step={1}
+            value={waitMinutes}
+            onChange={(e) => setWaitMinutes(Number(e.target.value))}
+            className={`
+              w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300
+              ${getWaitColour(waitMinutes)}
+            `}
+          />
+        </div>
+
+
+      </Modal>
     </div>
   );
 }
