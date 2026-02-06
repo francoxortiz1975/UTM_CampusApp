@@ -1,12 +1,254 @@
-import Header from '../../components/Header';
+'use client'
 
-export default function Food() {
+import Header from '../../components/Header';
+import { useState } from 'react';
+
+interface Restaurant {
+  id: string;
+  name: string;
+  building: string;
+  waitTime: number; // In minutes
+  tags: string[];
+  hours: {
+    monThu: string;
+    fri: string;
+  };
+  imagePlaceholderColor: string; // Using color for now, can replace with images later
+}
+
+const RESTAURANTS: Restaurant[] = [
+  {
+    id: '1',
+    name: 'Subway',
+    building: 'Instructional Building (IB)',
+    waitTime: 1,
+    tags: ['Sandwiches', 'Fresh', 'Healthy'],
+    hours: { monThu: '10am - 9:30pm', fri: '10:30am - 6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '2',
+    name: 'Harvey\'s',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 7,
+    tags: ['Burgers', 'Poutine', 'Grill', 'Fast Food'],
+    hours: { monThu: '10:30am - 9pm', fri: '10:30am - 4pm' },
+    imagePlaceholderColor: 'bg-red-200'
+  },
+  {
+    id: '3',
+    name: 'Starbucks',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Coffee', 'Espresso', 'Bakery', 'Breakfast'],
+    hours: { monThu: '8am - 7pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '4',
+    name: 'Second Cup Café',
+    building: 'Kaneff Centre (KN)',
+    waitTime: 3,
+    tags: ['Coffee', 'Tea', 'Pastries', 'Snacks'],
+    hours: { monThu: '8:30am - 5pm', fri: '8:30am - 3pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+];
+
+// --- Helpers ---
+
+// Colour logic for wait times (Green < 5m, Yellow < 10m, Red > 10m)
+const getWaitColour = (minutes: number) =>
+  minutes <= 5 ? 'text-green-600' :
+  minutes <= 10 ? 'text-yellow-600' :
+  'text-red-600';
+
+const today = new Date().toLocaleDateString(undefined, {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+// --- Components ---
+
+function FoodCard({ data }: { data: Restaurant }) {
+  if (!data) return null;
+
+  return (
+    <div className="bg-white rounded-xl shadow p-6">
+      <div className="flex justify-between mb-2">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">{data.name}</h2>
+          <div className="flex items-center text-gray-500 text-sm mt-1">
+            <span className="font-medium mr-2">{data.building}</span>
+            <span>📍</span>
+          </div>
+        </div>
+        <div className="text-right">
+             <h2 className="text-xs text-gray-400">{today}</h2>
+             <p className={`text-lg font-bold ${getWaitColour(data.waitTime)}`}>
+               ~{data.waitTime} min wait
+             </p>
+        </div>
+      </div>
+
+      {/* Image Placeholder */}
+      <div className={`w-full h-40 rounded-lg mb-4 ${data.imagePlaceholderColor} flex items-center justify-center text-gray-500`}>
+        [Image: {data.name}]
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {data.tags.map(tag => (
+          <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {/* Opening Hours */}
+      <div className="text-sm text-gray-600 mb-4 border-t pt-4">
+        <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
+        <div className="grid grid-cols-2 gap-4">
+          <p>Mon - Thu: <span className="font-medium">{data.hours.monThu}</span></p>
+          <p>Fri: <span className="font-medium">{data.hours.fri}</span></p>
+        </div>
+      </div>
+
+      {/* Report Button */}
+      <div className="flex justify-end">
+        <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+          ▶ Report Status
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function FoodCourtPage() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
+
+  // Filter Logic
+  const allTags = Array.from(new Set(RESTAURANTS.flatMap(r => r.tags)));
+  const allBuildings = Array.from(new Set(RESTAURANTS.map(r => r.building)));
+  const filters = [...allBuildings, ...allTags];
+
+  const filteredList = RESTAURANTS
+    .filter(r => {
+      const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = activeFilter 
+        ? (r.building === activeFilter || r.tags.includes(activeFilter))
+        : true;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => a.waitTime - b.waitTime); // Sort by fastest time
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
-      <div className="p-10">
-        <h1 className="text-3xl font-bold mb-4">Food Availability</h1>
-        <p>Display available food options here.</p>
+      
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        
+        {/* Page Title */}
+        <h1 className="text-3xl font-bold text-gray-800">Campus Food</h1>
+
+        {/* Selected Card (Popup/Detail View) */}
+        {selectedRestaurant && <FoodCard data={selectedRestaurant} />}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Left Column: Search & Filters */}
+          <div className="space-y-4">
+            {/* Search */}
+            <div>
+               <h3 className="text-sm font-bold text-gray-700 mb-2">Restaurant Search:</h3>
+               <div className="relative">
+                 <input 
+                   type="text" 
+                   placeholder="Hinted search text..." 
+                   className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-purple-500 placeholder-gray-500 text-gray-900"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                 />
+                 <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
+               </div>
+            </div>
+
+            {/* Filters */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">Filters:</h3>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => setActiveFilter(null)}
+                  className={`px-3 py-1 text-xs rounded-full border transition ${
+                    activeFilter === null ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+                  }`}
+                >
+                  All
+                </button>
+                {filters.map(filter => (
+                  <button
+                    key={filter}
+                    onClick={() => setActiveFilter(filter === activeFilter ? null : filter)}
+                    className={`px-3 py-1 text-xs rounded-full border transition ${
+                      activeFilter === filter 
+                        ? 'bg-purple-100 text-purple-800 border-purple-300' 
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Estimated Waiting Times List */}
+          <div className="md:col-span-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-3">Estimated Waiting Times:</h3>
+            <div className="bg-white rounded-xl shadow overflow-hidden">
+              <ul className="divide-y divide-gray-100">
+                {filteredList.map((item) => (
+                  <li key={item.id}>
+                    <button 
+                      onClick={() => setSelectedId(item.id)}
+                      className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
+                        selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 text-xl">✪</span> {/* Placeholder Icon */}
+                        <div>
+                          <p className="font-semibold text-gray-800">{item.name}</p>
+                          <p className="text-xs text-gray-400">{item.building}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${getWaitColour(item.waitTime)}`}>
+                          {item.waitTime} Minutes
+                        </span>
+                        <span className="text-gray-400">🕒</span>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+                
+                {filteredList.length === 0 && (
+                  <li className="p-6 text-center text-gray-500">
+                    No restaurants match your filters.
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
