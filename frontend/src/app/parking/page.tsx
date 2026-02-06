@@ -128,7 +128,7 @@ export default function Parking() {
         <div className="max-w-6xl mx-auto p-6 space-y-6">
           {/* Page Title */}
           <h1 className="text-3xl font-bold text-gray-800">
-            Gym Availability
+            Parking Availability
           </h1>
           
           {selectedParkingLot && (
