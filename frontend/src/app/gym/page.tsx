@@ -3,15 +3,7 @@
 import Header from '../../components/Header';
 import { useState } from 'react';
 import Modal from '../../components/Modal';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
+import CapacityCard from '../../components/CapacityCard';
 
 //Temporary dummy data
 const dummyCapacityData = [
@@ -38,135 +30,6 @@ const getColor = (p: number) =>
   p < 60 ? 'text-yellow-600' :
   'text-red-600';
 
-const today = () => {
-    return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-});}
-
-const getCurrentTimeLabel = () => {
-  const now = new Date();
-  let hour = now.getHours();
-
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-
-  return `${hour} ${suffix}`;
-};
-
-function GymCard({ gym }: {gym: string}){
-  if (!gym) return null;
-  const currentTime = getCurrentTimeLabel();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [capacity, setCapacity] = useState(50);
-  return (
-    <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className="text-xl text-black font-semibold">{gym}</h2>
-            </div>
-
-            <div>
-              <h2 className="text-xs items-center font-Menlo text-gray-400">{today()}</h2>
-            </div>
-
-            <div className="flex items-center space-x-2 text-black text-xl font-semibold">
-              <span>RAWC 📍</span>
-            </div>
-          </div>
-
-          {/* Chart Placeholder */}
-          <div className="flex items-center justify-center">
-            <span className="text-gray-800">
-              {gym} - Projected Activity Chart
-            </span>
-          </div>
-
-          {/* Capacity vs Time Graph */}
-          <div className="w-full h-56 mb-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dummyCapacityData}>
-                <XAxis dataKey="time" />
-                <YAxis domain={[0,100]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v: number) => `${v}%`} />
-                <Line
-                  type="monotone"
-                  dataKey="capacity"
-                  strokeWidth={3}
-                  dot={{r:4}}
-                />
-                <ReferenceLine
-                  x={currentTime}
-                  stroke="red"
-                  strokeDasharray="3 3"
-                  label="Now"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Opening Hours */}
-          <div className="text-sm text-gray-600 mb-4">
-            <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
-            <p>
-              Monday - Friday: <span className="font-medium text-black">7am - 10pm</span>
-            </p>
-            <p>
-              Saturday/Sunday: <span className="font-medium text-black">10am - 5pm</span>
-            </p>
-          </div>
-
-          {/* Report Button */}
-          <div className="flex justify-end">
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-              >
-              ▶ Report Status
-            </button>
-          </div>
-
-          <Modal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            title="Report Gym Status"
-          >
-            <p className="text-sm text-gray-600 mb-4">
-              Let us know how full the gym feels right now.
-            </p>
-
-            <div className="space-y-2">
-              <div className="mt-3 text-center">
-                <span className="text-sm text-black">Current Capacity:</span>
-
-                <div
-                  className={`text-2xl font-bold transition-colors duration-200 ${getColor(
-                    capacity
-                  )}`}
-                >
-                  {capacity}%
-                </div>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-                className={`
-                  w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300
-                  ${getColor(capacity)}
-                `}
-              />
-            </div>
-          </Modal>
-        </div>
-  )
-}
 
 export default function Gym() {
   const [selectedGym, setSelectedGym] = useState<string | null>(null);
@@ -180,7 +43,20 @@ export default function Gym() {
           Gym Availability
         </h1>
         
-        {selectedGym && <GymCard gym={selectedGym} />}
+        {selectedGym && (
+          <CapacityCard
+            title={selectedGym}
+            location="RAWC"
+            data={dummyCapacityData}
+            additionalInfo={
+              <>
+                <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
+                <p>Mon–Fri: <span className="text-black">7am – 10pm</span></p>
+                <p>Sat–Sun: <span className="text-black">10am – 5pm</span></p>
+              </>
+            }
+          />
+        )}
 
         {/* Projected Capactities */}
         <div className="bg-white rounded-xl shadow p-6">
