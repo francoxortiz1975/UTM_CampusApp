@@ -15,7 +15,7 @@ class StatusCode(IntEnum):
         return self.value >= 400
     
 class StatusReport:
-    def __init__(self, status: StatusCode, message: str):
+    def __init__(self, message: str, status: StatusCode):
 
         self.status = status
         if not isinstance(message, str):

@@ -28,8 +28,8 @@ def logout():
     status = Authenticator.logout()
     return status.json(), status.code()
 
-@app.route("/me", methods=["GET"])
+@auth_bp.route("/profile", methods=["GET"])
 def me():
-    ## Get user data iff loggedin ???
-    return 
+    status = Authenticator.profile()
+    return status.json(), status.code()
 
