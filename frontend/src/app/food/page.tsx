@@ -73,7 +73,7 @@ const today = new Date().toLocaleDateString(undefined, {
 
 // --- Components ---
 
-function FoodCard({ data }: { data: Restaurant }) {
+function FoodCard({ data, time }: { data: Restaurant, time: number }) {
   if (!data) return null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
@@ -90,8 +90,8 @@ function FoodCard({ data }: { data: Restaurant }) {
         </div>
         <div className="text-right">
              <h2 className="text-xs text-gray-400">{today}</h2>
-             <p className={`text-lg font-bold ${getWaitColour(data.waitTime)}`}>
-               ~{data.waitTime} min wait
+             <p className={`text-lg font-bold ${getWaitColour(time)}`}>
+               ~{time} min wait
              </p>
         </div>
       </div>
@@ -193,6 +193,7 @@ export default function FoodCourtPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
+  const [selectedTime, setSelectedTime] = useState<number | null>(null);
 
   const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
 
@@ -251,7 +252,12 @@ export default function FoodCourtPage() {
         <h1 className="text-3xl font-bold text-gray-800">Campus Food</h1>
 
         {/* Selected Card (Popup/Detail View) */}
-        {selectedRestaurant && <FoodCard data={selectedRestaurant} />}
+        {selectedRestaurant && (
+          <FoodCard 
+            data={selectedRestaurant} 
+            time={selectedTime} 
+          />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
@@ -313,6 +319,7 @@ export default function FoodCourtPage() {
                       <button 
                         onClick={async() => {
                           setSelectedId(item.id)
+                          setSelectedTime(time);
                         }}
                         className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
                           selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
