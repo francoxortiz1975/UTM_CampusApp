@@ -1,7 +1,7 @@
 'use client'
 
 import Header from '../../components/Header';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/Modal';
 
 interface Restaurant {
@@ -170,10 +170,29 @@ function FoodCard({ data }: { data: Restaurant }) {
   );
 }
 
+const now = new Date();
+
+async function getReport(location: String, time: number) {
+  const now = new Date();
+
+  const month = now.getMonth() + 1;
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/food/${location}`);
+  
+  if (!res.ok) {
+    throw new Error("Failed to fetch report");
+  }
+
+  const {estimate} = await res.json();
+  return estimate;
+}
+
 export default function FoodCourtPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [estimates, setEstimates] = useState<Record<string, number>>({});
 
   const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
 
@@ -191,6 +210,36 @@ export default function FoodCourtPage() {
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => a.waitTime - b.waitTime); // Sort by fastest time
+
+
+  useEffect(() => {
+    async function loadEstimates() {
+      const locations = [
+        { key: 'subway', name: RESTAURANTS[0].name },
+        { key: 'second', name: RESTAURANTS[3].name },
+        { key: 'harveys', name: RESTAURANTS[1].name },
+        { key: 'starbucks', name: RESTAURANTS[2].name }
+      ];
+
+      const time = now.getHours();
+      const results = await Promise.all(
+        locations.map(async (loc) => ({
+          name: loc.name,
+          estimate: await getReport(loc.key, time)
+        }))
+      );
+
+      const mapped: Record<string, number> = {};
+      results.forEach(r => {
+        mapped[r.name] = r.estimate;
+      });
+
+      setEstimates(mapped);
+      console.log("Mapped Estimates:", mapped);
+    }
+
+    loadEstimates();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -257,31 +306,35 @@ export default function FoodCourtPage() {
             <h3 className="text-lg font-bold text-gray-800 mb-3">Estimated Waiting Times:</h3>
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <ul className="divide-y divide-gray-100">
-                {filteredList.map((item) => (
-                  <li key={item.id}>
-                    <button 
-                      onClick={() => setSelectedId(item.id)}
-                      className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
-                        selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 text-xl">✪</span> {/* Placeholder Icon */}
-                        <div>
-                          <p className="font-semibold text-gray-800">{item.name}</p>
-                          <p className="text-xs text-gray-400">{item.building}</p>
+                {filteredList.map((item) => {
+                  const time = estimates[item.name];
+                  return(
+                    <li key={item.id}>
+                      <button 
+                        onClick={async() => {
+                          setSelectedId(item.id)
+                        }}
+                        className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
+                          selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-400 text-xl">✪</span> {/* Placeholder Icon */}
+                          <div>
+                            <p className="font-semibold text-gray-800">{item.name}</p>
+                            <p className="text-xs text-gray-400">{item.building}</p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className={`font-bold ${getWaitColour(item.waitTime)}`}>
-                          {item.waitTime} Minutes
-                        </span>
-                        <span className="text-gray-400">🕒</span>
-                      </div>
-                    </button>
-                  </li>
-                ))}
+                        
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-bold ${time !== undefined ? getWaitColour(time) : ''}`}>
+                            {time !== undefined ? `${time} Minutes 🕒` : 'Loading...'}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
                 
                 {filteredList.length === 0 && (
                   <li className="p-6 text-center text-gray-500">
