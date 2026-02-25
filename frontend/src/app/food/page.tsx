@@ -54,6 +54,358 @@ const RESTAURANTS: Restaurant[] = [
     hours: { monThu: '8:30am - 5pm', fri: '8:30am - 3pm' },
     imagePlaceholderColor: 'bg-yellow-100'
   },
+  {
+    id: '5',
+    name: 'Flex Bowl',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '6',
+    name: 'Tex Mex Grill',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '7',
+    name: 'Fresh Baked out of the Oven',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 9pm', fri: '10:30am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '8',
+    name: 'FUSION8',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '9',
+    name: 'Chef\'s Table',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am - 6pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '10',
+    name: 'Thai Express',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 7pm', fri: '10:30am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '11',
+    name: 'Shawarma Rotisserie',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '12',
+    name: 'CRISP Fresh Salads',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '13',
+    name: 'SAMMIES',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '14',
+    name: 'UTM Smoked Meat',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 7pm', fri: '11am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '15',
+    name: 'Baked',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am - 6pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '16',
+    name: 'Roasted & Steeped',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am - 6pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '17',
+    name: 'BODEGA',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am - 6pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '18',
+    name: 'Kettle Meal',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 8:30pm', fri: '11am - 3:30pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '19',
+    name: 'Ah-So Sushi',
+    building: 'William G. Davis Building (DV)',
+    waitTime: 3,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am - 6pm', fri: '8am - 4pm' },
+    imagePlaceholderColor: 'bg-yellow-100'
+  },
+  {
+    id: '20',
+    name: 'EuroBowl',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 4pm', fri: '11am - 3pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '21',
+    name: 'European Sandwich',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 4pm', fri: '11am - 3pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '22',
+    name: 'Fresh Baked out of the Oven',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 6pm', fri: '10:30am - 2pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '23',
+    name: 'Baked',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Placeholder'],
+    hours: { monThu: '8:30am - 6pm', fri: '8:30am - 3pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '24',
+    name: 'Kettle Meal',
+    building: 'Deerfield Hall (DH)',
+    waitTime: 11,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 5pm', fri: '10:30am - 2pm' },
+    imagePlaceholderColor: 'bg-green-200'
+  },
+  {
+    id: '25',
+    name: 'Quesada',
+    building: 'Instructional Building (IB)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10am - 9:30pm', fri: '10:30am - 6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '26',
+    name: 'Ah-So Sushi',
+    building: 'Instructional Building (IB)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 6pm', fri: '10:30am - 6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  // FIX THE OPH ENTRIES (MORE FLEXIBILITY IN DATES)
+  {
+    id: '27',
+    name: 'Grill over the Fire',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am - 9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '28',
+    name: 'Chef\'s Table',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '11:30am - 9am', fri: '11am - 8:30pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '29',
+    name: 'Fresh Baked out of the Oven',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 10pm', fri: '12:30pm - 7pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '30',
+    name: 'Kettle Meal',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 9pm', fri: '12:30pm - 6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '31',
+    name: 'Sammies',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 10pm', fri: '12:30pm - 7pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '32',
+    name: 'CRISP Fresh Salads',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '10:30am - 7pm', fri: '12:30pm - 6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '33',
+    name: 'POP UP',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '1pm - 8pm', fri: '1pm - 8pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '34',
+    name: 'FLEX BOWL',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '11am - 9pm', fri: 'Closed' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '35',
+    name: 'The Smoothie Bar',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 9pm', fri: '7:30am-6pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '36',
+    name: 'Baked',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am-9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '37',
+    name: 'BODEGA',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am-9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '38',
+    name: 'Oscar Café',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '8pm - 12am', fri: 'Closed' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '39',
+    name: 'C Store',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am-9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '40',
+    name: 'Roasted and Steeped',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am-9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '41',
+    name: 'Ah-So Sushi',
+    building: 'Oscar Peterson Hall (OPH)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '7:30am - 12am', fri: '7:30am-9pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '42',
+    name: 'Fair Trade Cafe',
+    building: 'Maanjiwe Nendamowinan (MN)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '9am-4pm', fri: '9am-3pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
+  {
+    id: '43',
+    name: 'Circuit Break Cafe',
+    building: 'Communication, Culture & Technology building (CCT)',
+    waitTime: 1,
+    tags: ['Placeholder'],
+    hours: { monThu: '8am-4pm', fri: '8am-2pm' },
+    imagePlaceholderColor: 'bg-orange-200'
+  },
 ];
 
 // --- Helpers ---
