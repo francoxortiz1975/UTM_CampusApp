@@ -7,6 +7,11 @@ type ModalProps = {
     onClose: () => void;
     title?: string;
     children: ReactNode;
+    onSubmit?: () => void | Promise<void>;
+    submitLabel?: string;
+};
+
+export default function Modal({isOpen, onClose, title, children, onSubmit, submitLabel}: ModalProps) {
     /** Override the primary button label (default "Submit") */
     primaryButtonText?: string;
     /** Override the primary button action (default: onClose) */
@@ -15,6 +20,16 @@ type ModalProps = {
 
 export default function Modal({isOpen, onClose, title, children, primaryButtonText = "Submit", primaryButtonOnClick}: ModalProps) {
     if (!isOpen) return null;
+
+    const handleSubmit = async () => {
+        try {
+            if (onSubmit) {
+                await onSubmit();
+            }
+        } finally {
+            onClose();
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -40,6 +55,10 @@ export default function Modal({isOpen, onClose, title, children, primaryButtonTe
                         Close
                     </button>
                     <button 
+                        onClick={handleSubmit}
+                        className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
+                    >
+                        {submitLabel ?? "Submit"}
                         onClick={primaryButtonOnClick ?? onClose}
                         className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
                     >
