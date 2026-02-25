@@ -1,7 +1,7 @@
 'use client'
 
 import Header from '../../components/Header';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/Modal';
 import CapacityCard from '../../components/CapacityCard';
 
@@ -25,14 +25,94 @@ const dummyCapacityData = [
   { time: '10 PM', capacity: 10 },
 ];
 
+interface buttonCapacities{
+  name: String;
+  capacity: number
+}
+
 const getColor = (p: number) =>
   p < 30 ? 'text-green-600' :
   p < 60 ? 'text-yellow-600' :
   'text-red-600';
 
+const now = new Date();
+
+async function getReport(location: String, time: number) {
+  const now = new Date();
+
+  const month = now.getMonth() + 1;
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/gym/${location}`);
+  
+  if (!res.ok) {
+    throw new Error("Failed to fetch report");
+  }
+
+  const {estimate} = await res.json();
+  return estimate;
+}
+
+async function getFullDayReport(location: String){
+  const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  const res = await fetch(
+    `http://localhost:5000/reports/${month}/${weekday}/gym/${location}`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch day report");
+  }
+
+  return await res.json();
+}
+
 
 export default function Gym() {
   const [selectedGym, setSelectedGym] = useState<string | null>(null);
+  const [estimates, setEstimates] = useState<Record<string, number>>({});
+  const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
+
+
+  useEffect(() => {
+    async function loadEstimates() {
+      const locations = [
+        { key: 'gyma', name: 'Gym A - RAWC' },
+        { key: 'gymb', name: 'Gym B - RAWC' },
+        { key: 'gymc', name: 'Gym C - RAWC' },
+        { key: 'weightroom', name: 'Weight Room - RAWC' },
+        { key: 'pool', name: 'Pool - RAWC' },
+        { key: 'tennis', name: 'Tennis Courts' }
+      ];
+
+      const time = now.getHours();
+      const results = await Promise.all(
+        locations.map(async (loc) => ({
+          name: loc.name,
+          estimate: await getReport(loc.key, time)
+        }))
+      );
+
+      const mapped: Record<string, number> = {};
+      results.forEach(r => {
+        mapped[r.name] = r.estimate;
+      });
+
+      setEstimates(mapped);
+    }
+
+    loadEstimates();
+  }, []);
+
+  const gyms = [
+    'Gym A - RAWC',
+    'Gym B - RAWC',
+    'Gym C - RAWC',
+    'Weight Room - RAWC',
+    'Pool - RAWC',
+    'Tennis Courts'
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -47,7 +127,7 @@ export default function Gym() {
           <CapacityCard
             title={selectedGym}
             location="RAWC"
-            data={dummyCapacityData}
+            data={graphData.length ? graphData : dummyCapacityData}
             additionalInfo={
               <>
                 <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
@@ -65,29 +145,33 @@ export default function Gym() {
           </h3>
 
           <ul className="space-y-3">
-            {[
-              { name: 'Gym A - RAWC', percent: 20 },
-              { name: 'Gym B - RAWC', percent: 30}, 
-              { name: 'Gym C - RAWC', percent: 35}, 
-              { name: 'Weight Room - RAWC', percent: 45},
-              { name: 'Pool - RAWC', percent: 50},
-              { name: 'Tennis Courts', percent: 100}
-            ].map((gym) => (
-              <li key={gym.name}>
-                <button 
-                  onClick={() => setSelectedGym(gym.name)}
-                  className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
-                >
-                  <span className="text-sm font-medium text-black">
-                    {gym.name}
-                  </span>
+            {gyms.map((name) => {
+              const percent = estimates[name];
 
-                  <span className={`text-sm font-semibold ${getColor(gym.percent)}`}>
-                    {gym.percent}%
-                  </span>
-                </button>
-              </li>
-            ))}
+              return (
+                <li key={name}>
+                  <button
+                    onClick={async () => {
+                      setSelectedGym(name);
+
+                      const locationKey = name.toLowerCase().replace(/[^a-z]/g, '');
+                      const data = await getFullDayReport(locationKey);
+
+                      setGraphData(data);
+                    }}
+                    className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
+                  >
+                    <span className="text-sm font-medium text-black">
+                      {name}
+                    </span>
+
+                    <span className={`text-sm font-semibold ${percent !== undefined ? getColor(percent) : ''}`}>
+                      {percent !== undefined ? `${percent}%` : 'Loading...'}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
 
         </div>

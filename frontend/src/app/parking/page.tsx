@@ -1,7 +1,7 @@
 'use client'
 
 import Header from '../../components/Header';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/Modal';
 import CapacityCard from '../../components/CapacityCard';
 
@@ -119,9 +119,75 @@ const PARKINGLOTS: ParkingLot[] = [
 
 ]
 
+const now = new Date();
+
+async function getReport(location: String, time: number) {
+  const now = new Date();
+
+  const month = now.getMonth() + 1;
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/parking/${location}`);
+  
+  if (!res.ok) {
+    throw new Error("Failed to fetch report");
+  }
+
+  const {estimate} = await res.json();
+  return estimate;
+}
+
+async function getFullDayReport(location: String){
+  const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/parking/${location}`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch day report");
+  }
+
+  return await res.json();
+}
+
 export default function Parking() {
   const [selectedParkingLot, setSelectedParkingLot] = useState<ParkingLot | null>(null);
+  const [estimates, setEstimates] = useState<Record<string, number>>({});
+  const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
   
+  useEffect(() => {
+      async function loadEstimates() {
+        const locations = [
+          { key: 'p1', name: 'P1' },
+          { key: 'p4', name: 'P4' },
+          { key: 'p5', name: 'P5' },
+          { key: 'p6', name: 'P6' },
+          { key: 'p7', name: 'P7' },
+          { key: 'p8', name: 'P8' },
+          { key: 'p9', name: 'P9' },
+          { key: 'p10', name: 'P10' },
+          { key: 'p11', name: 'P11' },
+          { key: 'cct', name: 'CCT Garage' },
+        ];
+  
+        const time = now.getHours();
+        const results = await Promise.all(
+          locations.map(async (loc) => ({
+            name: loc.name,
+            estimate: await getReport(loc.key, time)
+          }))
+        );
+  
+        const mapped: Record<string, number> = {};
+        results.forEach(r => {
+          mapped[r.name] = r.estimate;
+        });
+  
+        setEstimates(mapped);
+      }
+  
+      loadEstimates();
+    }, []);
+
     return (
       <div className="min-h-screen bg-gray-100">
         <Header />
@@ -135,7 +201,7 @@ export default function Parking() {
             <CapacityCard
               title={selectedParkingLot.name}
               location={selectedParkingLot.location}
-              data={dummyCapacityData}
+              data={graphData.length ? graphData : dummyCapacityData}
               additionalInfo={
                 <>
                   <p className="font-medium text-gray-700 mb-1">Rates:</p>
@@ -153,22 +219,33 @@ export default function Parking() {
             </h3>
   
             <ul className="space-y-3">
-              {PARKINGLOTS.map((lot) => (
-                <li key={lot.name}>
-                  <button 
-                    onClick={() => setSelectedParkingLot(lot)}
-                    className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
-                  >
-                    <span className="text-sm font-medium text-black">
-                      {lot.name}
-                    </span>
-  
-                    <span className={`text-sm font-semibold ${getColor(lot.capacity)}`}>
-                      {lot.capacity}%
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {PARKINGLOTS.map((lot) => {
+                const percent = estimates[lot.name];
+
+                return (
+                  <li key={lot.name}>
+                    <button
+                      onClick={async () => {
+                        setSelectedParkingLot(lot);
+
+                        const locationKey = lot.name.toLowerCase().replace(/[^a-z]/g, '');
+                        const data = await getFullDayReport(locationKey);
+
+                        setGraphData(data);
+                      }}
+                      className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
+                    >
+                      <span className="text-sm font-medium text-black">
+                        {lot.name}
+                      </span>
+
+                      <span className={`text-sm font-semibold ${percent !== undefined ? getColor(percent) : ''}`}>
+                        {percent !== undefined ? `${percent}%` : 'Loading...'}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
   
           </div>
