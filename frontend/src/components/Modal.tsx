@@ -7,10 +7,22 @@ type ModalProps = {
     onClose: () => void;
     title?: string;
     children: ReactNode;
+    onSubmit?: () => void | Promise<void>;
+    submitLabel?: string;
 };
 
-export default function Modal({isOpen, onClose, title, children}: ModalProps) {
+export default function Modal({isOpen, onClose, title, children, onSubmit, submitLabel}: ModalProps) {
     if (!isOpen) return null;
+
+    const handleSubmit = async () => {
+        try {
+            if (onSubmit) {
+                await onSubmit();
+            }
+        } finally {
+            onClose();
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -36,10 +48,10 @@ export default function Modal({isOpen, onClose, title, children}: ModalProps) {
                         Close
                     </button>
                     <button 
-                        onClick={onClose}
+                        onClick={handleSubmit}
                         className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
                     >
-                        Submit
+                        {submitLabel ?? "Submit"}
                     </button>
                 </div>
             </div>

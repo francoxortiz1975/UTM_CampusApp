@@ -426,9 +426,36 @@ const today = new Date().toLocaleDateString(undefined, {
 // --- Components ---
 
 function FoodCard({ data }: { data: Restaurant }) {
-  if (!data) return null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
+
+  const handleReportSubmit = async () => {
+    try {
+      const result = await fetch("http://localhost:5000/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          resource_type: "food",
+          resource_id: data.id,
+          value: waitMinutes,
+        }),
+      });
+
+      if (!result.ok) {
+        if (result.status === 401) {
+          alert("Please sign in to submit a report.");
+          return;
+        }
+        alert("Could not submit report right now.");
+        return;
+      }
+
+      alert("Report submitted.");
+    } catch {
+      alert("Could not reach backend.");
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -485,6 +512,7 @@ function FoodCard({ data }: { data: Restaurant }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Report Food Wait Time"
+        onSubmit={handleReportSubmit}
       >
         <p className="text-sm text-gray-600 mb-4">
           Let us know how long you waited.
