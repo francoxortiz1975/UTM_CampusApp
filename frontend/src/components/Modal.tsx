@@ -12,6 +12,13 @@ type ModalProps = {
 };
 
 export default function Modal({isOpen, onClose, title, children, onSubmit, submitLabel}: ModalProps) {
+    /** Override the primary button label (default "Submit") */
+    primaryButtonText?: string;
+    /** Override the primary button action (default: onClose) */
+    primaryButtonOnClick?: () => void;
+};
+
+export default function Modal({isOpen, onClose, title, children, primaryButtonText = "Submit", primaryButtonOnClick}: ModalProps) {
     if (!isOpen) return null;
 
     const handleSubmit = async () => {
@@ -52,6 +59,10 @@ export default function Modal({isOpen, onClose, title, children, onSubmit, submi
                         className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
                     >
                         {submitLabel ?? "Submit"}
+                        onClick={primaryButtonOnClick ?? onClose}
+                        className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
+                    >
+                        {primaryButtonText}
                     </button>
                 </div>
             </div>

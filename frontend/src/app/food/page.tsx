@@ -2,7 +2,9 @@
 
 import Header from '../../components/Header';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
+import { Profile } from '../../types/Authentication';
 
 interface Restaurant {
   id: string;
@@ -426,7 +428,9 @@ const today = new Date().toLocaleDateString(undefined, {
 // --- Components ---
 
 function FoodCard({ data }: { data: Restaurant }) {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
 
   const handleReportSubmit = async () => {
@@ -456,6 +460,17 @@ function FoodCard({ data }: { data: Restaurant }) {
       alert("Could not reach backend.");
     }
   };
+
+  const handleReportStatusClick = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsSignInModalOpen(true);
+    } else {
+      setIsModalOpen(true);
+    }
+  };
+
+  if (!data) return null;
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -501,12 +516,25 @@ function FoodCard({ data }: { data: Restaurant }) {
       {/* Report Button */}
       <div className="flex justify-end">
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleReportStatusClick}
           className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition"
           >
           ▶ Report Status
         </button>
       </div>
+
+      <Modal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+        title="Sign in required"
+        primaryButtonText="Sign In"
+        primaryButtonOnClick={() => {
+          setIsSignInModalOpen(false);
+          router.push('/signin');
+        }}
+      >
+        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+      </Modal>
 
       <Modal
         isOpen={isModalOpen}
