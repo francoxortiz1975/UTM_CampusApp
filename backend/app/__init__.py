@@ -14,7 +14,9 @@ def create_app():
 
     # Init the routes
     from .routes.authentication import auth_bp
+    from .routes.reports import reports_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(reports_bp, url_prefix="/reports")
 
     # Init the sql tables
     with app.app_context():

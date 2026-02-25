@@ -3,26 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Header from '../../components/Header';
-import {Signup, Login, User} from '../../types/Authentication';
-import {useRouter} from 'next/navigation';
+import { Signup, Login } from '../../types/Authentication';
+import { useRouter } from 'next/navigation';
 
 export default function SignUp() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Check if passwords match
         if (password !== confirmPassword) {
             alert('Passwords do not match!');
             return;
         }
-        console.log('Sign Up:', { email, password });
-        const newUser: User | null = await Signup(email, password);
-        const user: User | null = newUser != null && await Login(email, password) || null;
+        const newUser = await Signup(email, password);
+        const user = newUser != null ? await Login(email, password) : null;
         if (user == null) {
             alert('Invalid credentials!');
             return;

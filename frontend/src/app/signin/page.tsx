@@ -3,20 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Header from '../../components/Header';
-import {Login, User} from '../../types/Authentication';
-import {useRouter} from 'next/navigation';
+import { Login } from '../../types/Authentication';
+import { useRouter } from 'next/navigation';
 
 export default function SignIn() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
     const router = useRouter();
 
-    // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Sign In:', { email, password });
-        const user: User | null = await Login(email, password);
+        const user = await Login(email, password);
         if (user == null) {
             alert('Invalid credentials!');
             return;
