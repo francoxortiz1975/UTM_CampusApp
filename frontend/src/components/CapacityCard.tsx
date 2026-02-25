@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Modal from './Modal';
+import { Profile } from '../types/Authentication';
 import {
   LineChart,
   Line,
@@ -22,6 +24,7 @@ type CapacityCardProps = {
   location?: string;
   data: DataPoint[];
   openingHours?: React.ReactNode;
+  additionalInfo?: React.ReactNode;
 };
 
 const getColor = (p: number) =>
@@ -48,9 +51,20 @@ const getCurrentTimeLabel = () => {
 export default function CapacityCard({
   title, location, data, additionalInfo,}: CapacityCardProps) {
 
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [capacity, setCapacity] = useState(50);
   const currentTime = getCurrentTimeLabel();
+
+  const handleReportStatusClick = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsSignInModalOpen(true);
+    } else {
+      setIsModalOpen(true);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -77,7 +91,7 @@ export default function CapacityCard({
           <LineChart data={data}>
             <XAxis dataKey="time" tickFormatter={(value, index) => (index % 2 === 0 ? value : '')} />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(v: number) => `${v}%`} />
+            <Tooltip formatter={(v) => (v != null ? `${v}%` : '')} />
             <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 4 }} />
             <ReferenceLine
               x={currentTime}
@@ -99,14 +113,28 @@ export default function CapacityCard({
       {/* Report Button */}
       <div className="flex justify-end">
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleReportStatusClick}
           className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
         >
           ▶ Report Status
         </button>
       </div>
 
-      {/* Modal */}
+      {/* Sign-in required pop-up */}
+      <Modal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+        title="Sign in required"
+        primaryButtonText="Sign In"
+        primaryButtonOnClick={() => {
+          setIsSignInModalOpen(false);
+          router.push('/signin');
+        }}
+      >
+        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+      </Modal>
+
+      {/* Report Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

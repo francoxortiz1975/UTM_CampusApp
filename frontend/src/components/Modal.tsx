@@ -7,9 +7,13 @@ type ModalProps = {
     onClose: () => void;
     title?: string;
     children: ReactNode;
+    /** Override the primary button label (default "Submit") */
+    primaryButtonText?: string;
+    /** Override the primary button action (default: onClose) */
+    primaryButtonOnClick?: () => void;
 };
 
-export default function Modal({isOpen, onClose, title, children}: ModalProps) {
+export default function Modal({isOpen, onClose, title, children, primaryButtonText = "Submit", primaryButtonOnClick}: ModalProps) {
     if (!isOpen) return null;
 
     return (
@@ -36,10 +40,10 @@ export default function Modal({isOpen, onClose, title, children}: ModalProps) {
                         Close
                     </button>
                     <button 
-                        onClick={onClose}
+                        onClick={primaryButtonOnClick ?? onClose}
                         className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
                     >
-                        Submit
+                        {primaryButtonText}
                     </button>
                 </div>
             </div>

@@ -1,20 +1,19 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import {Profile, Logout, User} from '../types/Authentication';
+import { Profile, Logout } from '../types/Authentication';
 import { useState, useEffect } from 'react';
+import type { User } from '../types/Authentication';
 
 export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
-
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // NOTE (HALF): yes it needs to be in an async function :/
         async function fetchUser() {
-            const currUser: User | null = await Profile();
+            const currUser = await Profile();
             setUser(currUser);
             setLoading(false);
         }
