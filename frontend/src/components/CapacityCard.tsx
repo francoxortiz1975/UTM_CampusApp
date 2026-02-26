@@ -25,6 +25,8 @@ type CapacityCardProps = {
   data: DataPoint[];
   openingHours?: React.ReactNode;
   additionalInfo?: React.ReactNode;
+  reportType?: 'gym' | 'parking';
+  reportResourceId?: string;
 };
 
 const getColor = (p: number) =>
@@ -49,7 +51,7 @@ const getCurrentTimeLabel = () => {
 };
 
 export default function CapacityCard({
-  title, location, data, additionalInfo,}: CapacityCardProps) {
+  title, location, data, additionalInfo, reportType, reportResourceId}: CapacityCardProps) {
 
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,6 +65,52 @@ export default function CapacityCard({
       setIsSignInModalOpen(true);
     } else {
       setIsModalOpen(true);
+    }
+  };
+
+  const handleReportSubmit = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsModalOpen(false);
+      setIsSignInModalOpen(true);
+      return;
+    }
+
+    if (!reportType) {
+      alert('Reporting is not configured for this card.');
+      return;
+    }
+
+    try {
+      const result = await fetch('http://localhost:5000/reports/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          user_id: user.id,
+          title: `${reportType}:${reportResourceId ?? title}`,
+          content: JSON.stringify({
+            capacity,
+            location: location ?? null,
+            reported_at: new Date().toISOString(),
+          }),
+        }),
+      });
+
+      if (!result.ok) {
+        if (result.status === 401) {
+          alert('Please sign in to submit a report.');
+          setIsModalOpen(false);
+          setIsSignInModalOpen(true);
+          return;
+        }
+        alert('Could not submit report right now.');
+        return;
+      }
+
+      alert('Report submitted.');
+    } catch {
+      alert('Could not reach backend.');
     }
   };
 
@@ -139,6 +187,7 @@ export default function CapacityCard({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Report Status"
+        onSubmit={handleReportSubmit}
       >
         <p className="text-sm text-gray-600 mb-4">
           Let us know how full {title} feels right now.

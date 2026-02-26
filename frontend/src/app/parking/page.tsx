@@ -2,7 +2,6 @@
 
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
-import Modal from '../../components/Modal';
 import CapacityCard from '../../components/CapacityCard';
 
 const dummyCapacityData = [
@@ -121,32 +120,38 @@ const PARKINGLOTS: ParkingLot[] = [
 
 const now = new Date();
 
-async function getReport(location: String, time: number) {
+async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
 
   const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/parking/${location}`);
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch report");
-  }
+  try {
+    const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/parking/${location}`);
+    if (!res.ok) return 50;
 
-  const {estimate} = await res.json();
-  return estimate;
+    const payload = await res.json();
+    const estimate = payload?.estimate;
+    return typeof estimate === 'number' ? estimate : 50;
+  } catch {
+    return 50;
+  }
 }
 
-async function getFullDayReport(location: String){
+async function getFullDayReport(location: string): Promise<{ time: string; capacity: number }[]> {
   const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/parking/${location}`);
-  if (!res.ok) {
-    throw new Error("Failed to fetch day report");
-  }
+  try {
+    const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/parking/${location}`);
+    if (!res.ok) return dummyCapacityData;
 
-  return await res.json();
+    const payload = await res.json();
+    if (!Array.isArray(payload)) return dummyCapacityData;
+    return payload;
+  } catch {
+    return dummyCapacityData;
+  }
 }
 
 export default function Parking() {
@@ -202,6 +207,8 @@ export default function Parking() {
               title={selectedParkingLot.name}
               location={selectedParkingLot.location}
               data={graphData.length ? graphData : dummyCapacityData}
+              reportType="parking"
+              reportResourceId={selectedParkingLot.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
               additionalInfo={
                 <>
                   <p className="font-medium text-gray-700 mb-1">Rates:</p>

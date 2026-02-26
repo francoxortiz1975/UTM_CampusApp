@@ -1,5 +1,5 @@
 # app/routes/reports.py
-from flask import Blueprint, request
+from flask import Blueprint, request, session
 from ..components.report import Report
 from ..components.statusreport import StatusCode, StatusReport
 
@@ -55,19 +55,23 @@ def search_reports():
         return status.json(), status.code()
 
 
-@reports_bp.route("/", methods=["POST"])
+@reports_bp.route("/", methods=["POST"], strict_slashes=False)
 def create_report():
     """
     POST /reports/
-    Body: { "user_id": 1, "title": "...", "content": "..." }
+    Body: { "title": "...", "content": "..." }
     """
-    data = request.json
-    user_id = data.get("user_id")
+    data = request.json or {}
+    user_id = session.get("user_id")
     title = data.get("title")
     content = data.get("content", "")
 
-    if not user_id or not title:
-        status = StatusReport("user_id and title are required", StatusCode.BAD_REQUEST)
+    if not user_id:
+        status = StatusReport("You must be logged in to submit a report", StatusCode.UNAUTHORIZED)
+        return status.json(), status.code()
+
+    if not title:
+        status = StatusReport("title is required", StatusCode.BAD_REQUEST)
         return status.json(), status.code()
 
     report = Report(user_id=user_id, title=title, content=content)

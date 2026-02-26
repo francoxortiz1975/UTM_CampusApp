@@ -2,7 +2,6 @@
 
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
 import { Profile } from '../../types/Authentication';
@@ -428,24 +427,34 @@ const today = new Date().toLocaleDateString(undefined, {
 
 // --- Components ---
 
-function FoodCard({ data, time }: { data: Restaurant, time: number }) {
-  if (!data) return null;
-function FoodCard({ data }: { data: Restaurant }) {
+function FoodCard({ data, time }: { data: Restaurant; time: number }) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
 
   const handleReportSubmit = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsModalOpen(false);
+      setIsSignInModalOpen(true);
+      return;
+    }
+
     try {
-      const result = await fetch("http://localhost:5000/reports", {
+      const result = await fetch("http://localhost:5000/reports/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          resource_type: "food",
-          resource_id: data.id,
-          value: waitMinutes,
+          user_id: user.id,
+          title: `food:${data.id}`,
+          content: JSON.stringify({
+            wait_minutes: waitMinutes,
+            restaurant_name: data.name,
+            restaurant_id: data.id,
+            reported_at: new Date().toISOString(),
+          }),
         }),
       });
 
@@ -472,8 +481,6 @@ function FoodCard({ data }: { data: Restaurant }) {
       setIsModalOpen(true);
     }
   };
-
-  if (!data) return null;
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -583,20 +590,22 @@ function FoodCard({ data }: { data: Restaurant }) {
 
 const now = new Date();
 
-async function getReport(location: String, time: number) {
+async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
 
   const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/food/${location}`);
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch report");
-  }
+  try {
+    const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/food/${location}`);
+    if (!res.ok) return 10;
 
-  const {estimate} = await res.json();
-  return estimate;
+    const payload = await res.json();
+    const estimate = payload?.estimate;
+    return typeof estimate === 'number' ? estimate : 10;
+  } catch {
+    return 10;
+  }
 }
 
 export default function FoodCourtPage() {
@@ -666,7 +675,7 @@ export default function FoodCourtPage() {
         {selectedRestaurant && (
           <FoodCard 
             data={selectedRestaurant} 
-            time={selectedTime} 
+            time={selectedTime ?? selectedRestaurant.waitTime} 
           />
         )}
 
@@ -730,7 +739,7 @@ export default function FoodCourtPage() {
                       <button 
                         onClick={async() => {
                           setSelectedId(item.id)
-                          setSelectedTime(time);
+                          setSelectedTime(time ?? item.waitTime);
                         }}
                         className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
                           selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''

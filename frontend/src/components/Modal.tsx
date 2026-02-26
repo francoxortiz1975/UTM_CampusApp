@@ -1,71 +1,72 @@
-'use client'
+'use client';
 
-import { ReactNode } from "react"
+import { ReactNode } from 'react';
 
 type ModalProps = {
-    isOpen: boolean;
-    onClose: () => void;
-    title?: string;
-    children: ReactNode;
-    onSubmit?: () => void | Promise<void>;
-    submitLabel?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  children: ReactNode;
+  onSubmit?: () => void | Promise<void>;
+  submitLabel?: string;
+  primaryButtonText?: string;
+  primaryButtonOnClick?: () => void;
 };
 
-export default function Modal({isOpen, onClose, title, children, onSubmit, submitLabel}: ModalProps) {
-    /** Override the primary button label (default "Submit") */
-    primaryButtonText?: string;
-    /** Override the primary button action (default: onClose) */
-    primaryButtonOnClick?: () => void;
-};
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  onSubmit,
+  submitLabel,
+  primaryButtonText,
+  primaryButtonOnClick,
+}: ModalProps) {
+  if (!isOpen) return null;
 
-export default function Modal({isOpen, onClose, title, children, primaryButtonText = "Submit", primaryButtonOnClick}: ModalProps) {
-    if (!isOpen) return null;
+  const handlePrimaryAction = async () => {
+    if (primaryButtonOnClick) {
+      primaryButtonOnClick();
+      return;
+    }
 
-    const handleSubmit = async () => {
-        try {
-            if (onSubmit) {
-                await onSubmit();
-            }
-        } finally {
-            onClose();
-        }
-    };
+    if (onSubmit) {
+      try {
+        await onSubmit();
+      } finally {
+        onClose();
+      }
+      return;
+    }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <div 
-                className="absolute inset-0 bg-black/40"
-                onClick={onClose}
-            />
+    onClose();
+  };
 
-            {/* Modal Box */}
-            <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-6 z-12">
-                {title && (
-                    <h2 className="text-lg font-semibold text-black mb-4">{title}</h2>
-                )}
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-                {children}
+      <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+        {title && <h2 className="mb-4 text-lg font-semibold text-black">{title}</h2>}
 
-                <div className="mt-6 flex justify-between">
-                    <button 
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm text-black rounded-lg bg-gray-100 hover:bg-gray-200"
-                    >
-                        Close
-                    </button>
-                    <button 
-                        onClick={handleSubmit}
-                        className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
-                    >
-                        {submitLabel ?? "Submit"}
-                        onClick={primaryButtonOnClick ?? onClose}
-                        className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
-                    >
-                        {primaryButtonText}
-                    </button>
-                </div>
-            </div>
+        {children}
+
+        <div className="mt-6 flex justify-between">
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-black hover:bg-gray-200"
+          >
+            Close
+          </button>
+          <button
+            onClick={handlePrimaryAction}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700"
+          >
+            {primaryButtonText ?? submitLabel ?? 'Submit'}
+          </button>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
