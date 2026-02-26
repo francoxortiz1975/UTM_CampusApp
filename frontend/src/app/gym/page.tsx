@@ -38,7 +38,7 @@ async function getReport(location: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/gym/${location}`);
+    const res = await fetch(`http://127.0.0.1:5000/reports/${month}/${weekday}/${time}/gym/${location}`);
     if (!res.ok) return 50;
 
     const payload = await res.json();
@@ -55,7 +55,7 @@ async function getFullDayReport(location: string): Promise<{ time: string; capac
 
   try {
     const res = await fetch(
-      `http://localhost:5000/reports/${month}/${weekday}/gym/${location}`
+      `http://127.0.0.1:5000/reports/${month}/${weekday}/gym/${location}`
     );
 
     if (!res.ok) return dummyCapacityData;

@@ -442,7 +442,7 @@ function FoodCard({ data, time }: { data: Restaurant; time: number }) {
     }
 
     try {
-      const result = await fetch("http://localhost:5000/reports/", {
+      const result = await fetch("http://127.0.0.1:5000/reports/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -597,7 +597,7 @@ async function getReport(location: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/food/${location}`);
+    const res = await fetch(`http://127.0.0.1:5000/reports/${month}/${weekday}/${time}/food/${location}`);
     if (!res.ok) return 10;
 
     const payload = await res.json();
