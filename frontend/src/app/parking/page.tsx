@@ -119,6 +119,10 @@ const PARKINGLOTS: ParkingLot[] = [
 ]
 
 const now = new Date();
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
 
 async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
@@ -127,7 +131,7 @@ async function getReport(location: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`http://127.0.0.1:5000/reports/${month}/${weekday}/${time}/parking/${location}`);
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/parking/${location}`);
     if (!res.ok) return 50;
 
     const payload = await res.json();
@@ -143,7 +147,7 @@ async function getFullDayReport(location: string): Promise<{ time: string; capac
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`http://127.0.0.1:5000/reports/${month}/${weekday}/parking/${location}`);
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/parking/${location}`);
     if (!res.ok) return dummyCapacityData;
 
     const payload = await res.json();

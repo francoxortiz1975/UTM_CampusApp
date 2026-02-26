@@ -3,11 +3,16 @@ export type User = {
     email: string;
 };
 
-const API_BASE = "http://127.0.0.1:5000";
+function apiBase(): string {
+    if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
+        return "http://127.0.0.1:5000";
+    }
+    return "http://localhost:5000";
+}
 
 export async function Signup(email: string, password: string): Promise<User | null> {
     try {
-        const result: Response = await fetch(`${API_BASE}/auth/signup`, {
+        const result: Response = await fetch(`${apiBase()}/auth/signup`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({"email": email, "password": password}),
@@ -24,7 +29,7 @@ export async function Signup(email: string, password: string): Promise<User | nu
 
 export async function Login(email: string, password: string): Promise<User | null> {
     try {
-        const result: Response = await fetch(`${API_BASE}/auth/login`, {
+        const result: Response = await fetch(`${apiBase()}/auth/login`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({"email": email, "password": password}),
@@ -41,7 +46,7 @@ export async function Login(email: string, password: string): Promise<User | nul
 
 export async function Logout(): Promise<boolean> {
     try {
-        const result: Response = await fetch(`${API_BASE}/auth/logout`, {
+        const result: Response = await fetch(`${apiBase()}/auth/logout`, {
             method: "POST",
             credentials: "include",
         });
@@ -56,7 +61,7 @@ export async function Logout(): Promise<boolean> {
 
 export async function Profile(): Promise<User | null> {
     try {
-        const result: Response = await fetch(`${API_BASE}/auth/profile`, {
+        const result: Response = await fetch(`${apiBase()}/auth/profile`, {
             method: "GET",
             credentials: "include",
         });

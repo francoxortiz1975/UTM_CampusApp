@@ -425,6 +425,11 @@ const today = new Date().toLocaleDateString(undefined, {
   day: 'numeric',
 });
 
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
+
 // --- Components ---
 
 function FoodCard({ data, time }: { data: Restaurant; time: number }) {
@@ -442,7 +447,7 @@ function FoodCard({ data, time }: { data: Restaurant; time: number }) {
     }
 
     try {
-      const result = await fetch("http://127.0.0.1:5000/reports/", {
+      const result = await fetch(`${apiBase}/reports/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -597,7 +602,7 @@ async function getReport(location: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`http://127.0.0.1:5000/reports/${month}/${weekday}/${time}/food/${location}`);
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${location}`);
     if (!res.ok) return 10;
 
     const payload = await res.json();
@@ -733,13 +738,13 @@ export default function FoodCourtPage() {
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <ul className="divide-y divide-gray-100">
                 {filteredList.map((item) => {
-                  const time = estimates[item.name];
+                  const time = estimates[item.name] ?? item.waitTime;
                   return(
                     <li key={item.id}>
                       <button 
                         onClick={async() => {
                           setSelectedId(item.id)
-                          setSelectedTime(time ?? item.waitTime);
+                          setSelectedTime(time);
                         }}
                         className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
                           selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
@@ -754,8 +759,8 @@ export default function FoodCourtPage() {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${time !== undefined ? getWaitColour(time) : ''}`}>
-                            {time !== undefined ? `${time} Minutes 🕒` : 'Loading...'}
+                          <span className={`text-sm font-bold ${getWaitColour(time)}`}>
+                            {`${time} Minutes 🕒`}
                           </span>
                         </div>
                       </button>

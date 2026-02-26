@@ -50,6 +50,11 @@ const getCurrentTimeLabel = () => {
   return `${hour} ${suffix}`;
 };
 
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
+
 export default function CapacityCard({
   title, location, data, additionalInfo, reportType, reportResourceId}: CapacityCardProps) {
 
@@ -82,7 +87,7 @@ export default function CapacityCard({
     }
 
     try {
-      const result = await fetch('http://127.0.0.1:5000/reports/', {
+      const result = await fetch(`${apiBase}/reports/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
