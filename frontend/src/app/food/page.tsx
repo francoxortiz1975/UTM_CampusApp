@@ -5,6 +5,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
 import { Profile } from '../../types/Authentication';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface Restaurant {
   id: string;
@@ -430,6 +438,22 @@ const apiBase =
     ? 'http://127.0.0.1:5000'
     : 'http://localhost:5000';
 
+function buildFoodTrendData(current: number): { time: string; wait: number }[] {
+  const cap = (value: number) => Math.max(0, Math.min(60, value));
+  const anchors = [
+    ['9 AM', cap(current - 6)],
+    ['10 AM', cap(current - 3)],
+    ['11 AM', cap(current + 1)],
+    ['12 PM', cap(current + 4)],
+    ['1 PM', cap(current + 2)],
+    ['2 PM', cap(current)],
+    ['3 PM', cap(current - 2)],
+    ['4 PM', cap(current + 1)],
+  ] as const;
+
+  return anchors.map(([time, wait]) => ({ time, wait }));
+}
+
 // --- Components ---
 
 function FoodCard({ data, time }: { data: Restaurant; time: number }) {
@@ -437,6 +461,7 @@ function FoodCard({ data, time }: { data: Restaurant; time: number }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
+  const trendData = buildFoodTrendData(time);
 
   const handleReportSubmit = async () => {
     const user = await Profile();
@@ -505,9 +530,16 @@ function FoodCard({ data, time }: { data: Restaurant; time: number }) {
         </div>
       </div>
 
-      {/* Image Placeholder */}
-      <div className={`w-full h-40 rounded-lg mb-4 ${data.imagePlaceholderColor} flex items-center justify-center text-gray-500`}>
-        [Image: {data.name}]
+      {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
+      <div className="w-full h-40 rounded-lg mb-4 bg-gray-50 border border-gray-200 p-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={trendData}>
+            <XAxis dataKey="time" />
+            <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}m`} />
+            <Tooltip formatter={(v) => `${v} min`} />
+            <Line type="monotone" dataKey="wait" strokeWidth={3} dot={{ r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Tags */}

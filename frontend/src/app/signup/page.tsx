@@ -20,7 +20,7 @@ export default function SignUp() {
         }
         const newUser = await Signup(email, password);
         if (newUser == null) {
-            alert('Could not create account. The email may already be in use.');
+            alert('Could not create account. This can happen if the email already exists or the backend is unreachable.');
             return;
         }
 

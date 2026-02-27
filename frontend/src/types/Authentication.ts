@@ -4,8 +4,9 @@ export type User = {
 };
 
 function apiBase(): string {
-    if (typeof window !== "undefined" && window.location.hostname === "127.0.0.1") {
-        return "http://127.0.0.1:5000";
+    if (typeof window !== "undefined") {
+        const host = window.location.hostname || "localhost";
+        return `http://${host}:5000`;
     }
     return "http://localhost:5000";
 }
