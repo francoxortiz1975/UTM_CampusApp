@@ -123,6 +123,8 @@ const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'
     : 'http://localhost:5000';
+const PARKING_OVERRIDES_KEY = 'placeholder:parkingCapacityOverrides';
+const parkingId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
 async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
@@ -162,6 +164,14 @@ export default function Parking() {
   const [selectedParkingLot, setSelectedParkingLot] = useState<ParkingLot | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
+  const [capacityOverrides, setCapacityOverrides] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(PARKING_OVERRIDES_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
   
   useEffect(() => {
       async function loadEstimates() {
@@ -190,12 +200,20 @@ export default function Parking() {
         results.forEach(r => {
           mapped[r.name] = r.estimate;
         });
-  
-        setEstimates(mapped);
+
+        const mappedWithOverrides = { ...mapped };
+        PARKINGLOTS.forEach((lot) => {
+          const override = capacityOverrides[parkingId(lot.name)];
+          if (typeof override === 'number') {
+            mappedWithOverrides[lot.name] = override;
+          }
+        });
+
+        setEstimates(mappedWithOverrides);
       }
   
       loadEstimates();
-    }, []);
+    }, [capacityOverrides]);
 
     return (
       <div className="min-h-screen bg-gray-100">
@@ -212,12 +230,19 @@ export default function Parking() {
               location={selectedParkingLot.location}
               data={graphData.length ? graphData : dummyCapacityData}
               reportType="parking"
-              reportResourceId={selectedParkingLot.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+              reportResourceId={parkingId(selectedParkingLot.name)}
               onReportSubmitted={(reportedCapacity) => {
                 setEstimates((prev) => ({
                   ...prev,
                   [selectedParkingLot.name]: reportedCapacity,
                 }));
+                setCapacityOverrides((prev) => {
+                  const updated = { ...prev, [parkingId(selectedParkingLot.name)]: reportedCapacity };
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(PARKING_OVERRIDES_KEY, JSON.stringify(updated));
+                  }
+                  return updated;
+                });
                 setGraphData((prev) => {
                   const base = prev.length ? prev : dummyCapacityData;
                   const updated = [...base];
@@ -256,8 +281,13 @@ export default function Parking() {
 
                         const locationKey = lot.name.toLowerCase().replace(/[^a-z]/g, '');
                         const data = await getFullDayReport(locationKey);
+                        const override = capacityOverrides[parkingId(lot.name)];
+                        const adjustedData =
+                          typeof override === 'number' && data.length
+                            ? [...data.slice(0, -1), { ...data[data.length - 1], capacity: override }]
+                            : data;
 
-                        setGraphData(data);
+                        setGraphData(adjustedData);
                       }}
                       className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                     >

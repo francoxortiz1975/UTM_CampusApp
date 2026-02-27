@@ -34,6 +34,16 @@ const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'
     : 'http://localhost:5000';
+const GYM_OVERRIDES_KEY = 'placeholder:gymCapacityOverrides';
+const gymId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+const GYMS = [
+  'Gym A - RAWC',
+  'Gym B - RAWC',
+  'Gym C - RAWC',
+  'Weight Room - RAWC',
+  'Pool - RAWC',
+  'Tennis Courts',
+];
 
 async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
@@ -77,6 +87,14 @@ export default function Gym() {
   const [selectedGym, setSelectedGym] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
+  const [capacityOverrides, setCapacityOverrides] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(GYM_OVERRIDES_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
 
 
   useEffect(() => {
@@ -103,20 +121,18 @@ export default function Gym() {
         mapped[r.name] = r.estimate;
       });
 
-      setEstimates(mapped);
+      const mappedWithOverrides = { ...mapped };
+      GYMS.forEach((name) => {
+        const override = capacityOverrides[gymId(name)];
+        if (typeof override === 'number') {
+          mappedWithOverrides[name] = override;
+        }
+      });
+      setEstimates(mappedWithOverrides);
     }
 
     loadEstimates();
-  }, []);
-
-  const gyms = [
-    'Gym A - RAWC',
-    'Gym B - RAWC',
-    'Gym C - RAWC',
-    'Weight Room - RAWC',
-    'Pool - RAWC',
-    'Tennis Courts'
-  ];
+  }, [capacityOverrides]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -133,12 +149,19 @@ export default function Gym() {
             location="RAWC"
             data={graphData.length ? graphData : dummyCapacityData}
             reportType="gym"
-            reportResourceId={selectedGym.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+            reportResourceId={gymId(selectedGym)}
             onReportSubmitted={(reportedCapacity) => {
               setEstimates((prev) => ({
                 ...prev,
                 [selectedGym]: reportedCapacity,
               }));
+              setCapacityOverrides((prev) => {
+                const updated = { ...prev, [gymId(selectedGym)]: reportedCapacity };
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(GYM_OVERRIDES_KEY, JSON.stringify(updated));
+                }
+                return updated;
+              });
               setGraphData((prev) => {
                 const base = prev.length ? prev : dummyCapacityData;
                 const updated = [...base];
@@ -166,7 +189,7 @@ export default function Gym() {
           </h3>
 
           <ul className="space-y-3">
-            {gyms.map((name) => {
+            {GYMS.map((name) => {
               const percent = estimates[name];
 
               return (
@@ -177,8 +200,13 @@ export default function Gym() {
 
                       const locationKey = name.toLowerCase().replace(/[^a-z]/g, '');
                       const data = await getFullDayReport(locationKey);
+                      const override = capacityOverrides[gymId(name)];
+                      const adjustedData =
+                        typeof override === 'number' && data.length
+                          ? [...data.slice(0, -1), { ...data[data.length - 1], capacity: override }]
+                          : data;
 
-                      setGraphData(data);
+                      setGraphData(adjustedData);
                     }}
                     className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                   >

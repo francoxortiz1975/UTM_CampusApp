@@ -437,6 +437,7 @@ const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'
     : 'http://localhost:5000';
+const FOOD_OVERRIDES_KEY = 'placeholder:foodWaitOverrides';
 
 function buildFoodTrendData(current: number): { time: string; wait: number }[] {
   const cap = (value: number) => Math.max(0, Math.min(60, value));
@@ -660,6 +661,14 @@ export default function FoodCourtPage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [foodOverrides, setFoodOverrides] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(FOOD_OVERRIDES_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
 
   const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
 
@@ -701,12 +710,20 @@ export default function FoodCourtPage() {
         mapped[r.name] = r.estimate;
       });
 
-      setEstimates(mapped);
+      const mappedWithOverrides = { ...mapped };
+      RESTAURANTS.forEach((restaurant) => {
+        const override = foodOverrides[restaurant.id];
+        if (typeof override === 'number') {
+          mappedWithOverrides[restaurant.name] = override;
+        }
+      });
+
+      setEstimates(mappedWithOverrides);
       console.log("Mapped Estimates:", mapped);
     }
 
     loadEstimates();
-  }, []);
+  }, [foodOverrides]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -728,6 +745,13 @@ export default function FoodCourtPage() {
                 ...prev,
                 [selectedRestaurant.name]: reportedWait,
               }));
+              setFoodOverrides((prev) => {
+                const updated = { ...prev, [selectedRestaurant.id]: reportedWait };
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(FOOD_OVERRIDES_KEY, JSON.stringify(updated));
+                }
+                return updated;
+              });
             }}
           />
         )}
@@ -786,7 +810,7 @@ export default function FoodCourtPage() {
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <ul className="divide-y divide-gray-100">
                 {filteredList.map((item) => {
-                  const time = estimates[item.name] ?? item.waitTime;
+                  const time = foodOverrides[item.id] ?? estimates[item.name] ?? item.waitTime;
                   return(
                     <li key={item.id}>
                       <button 
