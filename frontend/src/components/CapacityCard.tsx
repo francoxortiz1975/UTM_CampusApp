@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from './Modal';
 import { Profile } from '../types/Authentication';
@@ -25,6 +25,9 @@ type CapacityCardProps = {
   data: DataPoint[];
   openingHours?: React.ReactNode;
   additionalInfo?: React.ReactNode;
+  reportType?: 'gym' | 'parking';
+  reportResourceId?: string;
+  onReportSubmitted?: (reportedCapacity: number) => void;
 };
 
 const getColor = (p: number) =>
@@ -48,14 +51,24 @@ const getCurrentTimeLabel = () => {
   return `${hour} ${suffix}`;
 };
 
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
+
 export default function CapacityCard({
-  title, location, data, additionalInfo,}: CapacityCardProps) {
+  title, location, data, additionalInfo, reportType, reportResourceId, onReportSubmitted}: CapacityCardProps) {
 
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [capacity, setCapacity] = useState(50);
+  const [chartData, setChartData] = useState<DataPoint[]>(data);
   const currentTime = getCurrentTimeLabel();
+
+  useEffect(() => {
+    setChartData(data);
+  }, [data]);
 
   const handleReportStatusClick = async () => {
     const user = await Profile();
@@ -63,6 +76,59 @@ export default function CapacityCard({
       setIsSignInModalOpen(true);
     } else {
       setIsModalOpen(true);
+    }
+  };
+
+  const handleReportSubmit = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsModalOpen(false);
+      setIsSignInModalOpen(true);
+      return;
+    }
+
+    if (!reportType) {
+      alert('Reporting is not configured for this card.');
+      return;
+    }
+
+    try {
+      const result = await fetch(`${apiBase}/reports/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          user_id: user.id,
+          title: `${reportType}:${reportResourceId ?? title}`,
+          content: JSON.stringify({
+            capacity,
+            location: location ?? null,
+            reported_at: new Date().toISOString(),
+          }),
+        }),
+      });
+
+      if (!result.ok) {
+        if (result.status === 401) {
+          alert('Please sign in to submit a report.');
+          setIsModalOpen(false);
+          setIsSignInModalOpen(true);
+          return;
+        }
+        alert('Could not submit report right now.');
+        return;
+      }
+
+      setChartData((prev) => {
+        const base = prev.length ? prev : [{ time: currentTime, capacity }];
+        const updated = [...base];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], capacity };
+        return updated;
+      });
+      onReportSubmitted?.(capacity);
+      alert('Report submitted.');
+    } catch {
+      alert('Could not reach backend.');
     }
   };
 
@@ -88,7 +154,7 @@ export default function CapacityCard({
       {/* Chart */}
       <div className="w-full h-56 mb-6">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <XAxis dataKey="time" tickFormatter={(value, index) => (index % 2 === 0 ? value : '')} />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <Tooltip formatter={(v) => (v != null ? `${v}%` : '')} />
@@ -139,6 +205,7 @@ export default function CapacityCard({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Report Status"
+        onSubmit={handleReportSubmit}
       >
         <p className="text-sm text-gray-600 mb-4">
           Let us know how full {title} feels right now.

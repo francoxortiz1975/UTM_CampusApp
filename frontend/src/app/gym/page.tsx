@@ -2,7 +2,6 @@
 
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
-import Modal from '../../components/Modal';
 import CapacityCard from '../../components/CapacityCard';
 
 //Temporary dummy data
@@ -25,47 +24,62 @@ const dummyCapacityData = [
   { time: '10 PM', capacity: 10 },
 ];
 
-interface buttonCapacities{
-  name: String;
-  capacity: number
-}
-
 const getColor = (p: number) =>
   p < 30 ? 'text-green-600' :
   p < 60 ? 'text-yellow-600' :
   'text-red-600';
 
 const now = new Date();
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
+const GYM_OVERRIDES_KEY = 'placeholder:gymCapacityOverrides';
+const gymId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+const GYMS = [
+  'Gym A - RAWC',
+  'Gym B - RAWC',
+  'Gym C - RAWC',
+  'Weight Room - RAWC',
+  'Pool - RAWC',
+  'Tennis Courts',
+];
 
-async function getReport(location: String, time: number) {
+async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
 
   const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/gym/${location}`);
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch report");
-  }
+  try {
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/gym/${location}`);
+    if (!res.ok) return 50;
 
-  const {estimate} = await res.json();
-  return estimate;
+    const payload = await res.json();
+    const estimate = payload?.estimate;
+    return typeof estimate === 'number' ? estimate : 50;
+  } catch {
+    return 50;
+  }
 }
 
-async function getFullDayReport(location: String){
+async function getFullDayReport(location: string): Promise<{ time: string; capacity: number }[]> {
   const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(
-    `http://localhost:5000/reports/${month}/${weekday}/gym/${location}`
-  );
+  try {
+    const res = await fetch(
+      `${apiBase}/reports/${month}/${weekday}/gym/${location}`
+    );
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch day report");
+    if (!res.ok) return dummyCapacityData;
+
+    const payload = await res.json();
+    if (!Array.isArray(payload)) return dummyCapacityData;
+    return payload;
+  } catch {
+    return dummyCapacityData;
   }
-
-  return await res.json();
 }
 
 
@@ -73,6 +87,14 @@ export default function Gym() {
   const [selectedGym, setSelectedGym] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
+  const [capacityOverrides, setCapacityOverrides] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(GYM_OVERRIDES_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
 
 
   useEffect(() => {
@@ -99,20 +121,18 @@ export default function Gym() {
         mapped[r.name] = r.estimate;
       });
 
-      setEstimates(mapped);
+      const mappedWithOverrides = { ...mapped };
+      GYMS.forEach((name) => {
+        const override = capacityOverrides[gymId(name)];
+        if (typeof override === 'number') {
+          mappedWithOverrides[name] = override;
+        }
+      });
+      setEstimates(mappedWithOverrides);
     }
 
     loadEstimates();
-  }, []);
-
-  const gyms = [
-    'Gym A - RAWC',
-    'Gym B - RAWC',
-    'Gym C - RAWC',
-    'Weight Room - RAWC',
-    'Pool - RAWC',
-    'Tennis Courts'
-  ];
+  }, [capacityOverrides]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -128,6 +148,30 @@ export default function Gym() {
             title={selectedGym}
             location="RAWC"
             data={graphData.length ? graphData : dummyCapacityData}
+            reportType="gym"
+            reportResourceId={gymId(selectedGym)}
+            onReportSubmitted={(reportedCapacity) => {
+              setEstimates((prev) => ({
+                ...prev,
+                [selectedGym]: reportedCapacity,
+              }));
+              setCapacityOverrides((prev) => {
+                const updated = { ...prev, [gymId(selectedGym)]: reportedCapacity };
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(GYM_OVERRIDES_KEY, JSON.stringify(updated));
+                }
+                return updated;
+              });
+              setGraphData((prev) => {
+                const base = prev.length ? prev : dummyCapacityData;
+                const updated = [...base];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  capacity: reportedCapacity,
+                };
+                return updated;
+              });
+            }}
             additionalInfo={
               <>
                 <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
@@ -145,7 +189,7 @@ export default function Gym() {
           </h3>
 
           <ul className="space-y-3">
-            {gyms.map((name) => {
+            {GYMS.map((name) => {
               const percent = estimates[name];
 
               return (
@@ -156,8 +200,13 @@ export default function Gym() {
 
                       const locationKey = name.toLowerCase().replace(/[^a-z]/g, '');
                       const data = await getFullDayReport(locationKey);
+                      const override = capacityOverrides[gymId(name)];
+                      const adjustedData =
+                        typeof override === 'number' && data.length
+                          ? [...data.slice(0, -1), { ...data[data.length - 1], capacity: override }]
+                          : data;
 
-                      setGraphData(data);
+                      setGraphData(adjustedData);
                     }}
                     className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                   >

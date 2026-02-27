@@ -10,7 +10,8 @@ def create_app():
 
     sqlalchemy.init_app(app)
     bcrypt.init_app(app)
-    CORS(app, origins="http://localhost:3000", supports_credentials=True)  # simple, inline
+    # Dev-friendly CORS so frontend works from localhost, 127.0.0.1, or LAN IP during team testing.
+    CORS(app, supports_credentials=True)
 
     # Init the routes
     from .routes.authentication import auth_bp

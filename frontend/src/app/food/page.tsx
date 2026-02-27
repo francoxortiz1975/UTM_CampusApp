@@ -5,6 +5,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
 import { Profile } from '../../types/Authentication';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface Restaurant {
   id: string;
@@ -425,25 +433,67 @@ const today = new Date().toLocaleDateString(undefined, {
   day: 'numeric',
 });
 
+const apiBase =
+  typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:5000'
+    : 'http://localhost:5000';
+const FOOD_OVERRIDES_KEY = 'placeholder:foodWaitOverrides';
+
+function buildFoodTrendData(current: number): { time: string; wait: number }[] {
+  const cap = (value: number) => Math.max(0, Math.min(60, value));
+  const anchors = [
+    ['9 AM', cap(current - 6)],
+    ['10 AM', cap(current - 3)],
+    ['11 AM', cap(current + 1)],
+    ['12 PM', cap(current + 4)],
+    ['1 PM', cap(current + 2)],
+    ['2 PM', cap(current)],
+    ['3 PM', cap(current - 2)],
+    ['4 PM', cap(current + 1)],
+  ] as const;
+
+  return anchors.map(([time, wait]) => ({ time, wait }));
+}
+
 // --- Components ---
 
-function FoodCard({ data, time }: { data: Restaurant, time: number }) {
-  if (!data) return null;
+function FoodCard({
+  data,
+  time,
+  onReportSubmitted,
+}: {
+  data: Restaurant;
+  time: number;
+  onReportSubmitted?: (reportedWait: number) => void;
+}) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
+  const trendData = buildFoodTrendData(time);
 
   const handleReportSubmit = async () => {
+    const user = await Profile();
+    if (user == null) {
+      setIsModalOpen(false);
+      setIsSignInModalOpen(true);
+      return;
+    }
+
     try {
-      const result = await fetch("http://localhost:5000/reports", {
+      const result = await fetch(`${apiBase}/reports/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          resource_type: "food",
-          resource_id: data.id,
-          value: waitMinutes,
+          user_id: user.id,
+          title: `food:${data.id}`,
+          content: JSON.stringify({
+            wait_minutes: waitMinutes,
+            restaurant_name: data.name,
+            restaurant_id: data.id,
+            reported_at: new Date().toISOString(),
+          }),
         }),
       });
 
@@ -456,6 +506,7 @@ function FoodCard({ data, time }: { data: Restaurant, time: number }) {
         return;
       }
 
+      onReportSubmitted?.(waitMinutes);
       alert("Report submitted.");
     } catch {
       alert("Could not reach backend.");
@@ -470,8 +521,6 @@ function FoodCard({ data, time }: { data: Restaurant, time: number }) {
       setIsModalOpen(true);
     }
   };
-
-  if (!data) return null;
 
   return (
     <div className="bg-white rounded-xl shadow p-6">
@@ -491,9 +540,16 @@ function FoodCard({ data, time }: { data: Restaurant, time: number }) {
         </div>
       </div>
 
-      {/* Image Placeholder */}
-      <div className={`w-full h-40 rounded-lg mb-4 ${data.imagePlaceholderColor} flex items-center justify-center text-gray-500`}>
-        [Image: {data.name}]
+      {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
+      <div className="w-full h-40 rounded-lg mb-4 bg-gray-50 border border-gray-200 p-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={trendData}>
+            <XAxis dataKey="time" />
+            <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}m`} />
+            <Tooltip formatter={(v) => `${v} min`} />
+            <Line type="monotone" dataKey="wait" strokeWidth={3} dot={{ r: 3 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Tags */}
@@ -581,20 +637,22 @@ function FoodCard({ data, time }: { data: Restaurant, time: number }) {
 
 const now = new Date();
 
-async function getReport(location: String, time: number) {
+async function getReport(location: string, time: number): Promise<number> {
   const now = new Date();
 
   const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
-  const res = await fetch(`http://localhost:5000/reports/${month}/${weekday}/${time}/food/${location}`);
-  
-  if (!res.ok) {
-    throw new Error("Failed to fetch report");
-  }
+  try {
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${location}`);
+    if (!res.ok) return 10;
 
-  const {estimate} = await res.json();
-  return estimate;
+    const payload = await res.json();
+    const estimate = payload?.estimate;
+    return typeof estimate === 'number' ? estimate : 10;
+  } catch {
+    return 10;
+  }
 }
 
 export default function FoodCourtPage() {
@@ -603,6 +661,14 @@ export default function FoodCourtPage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [foodOverrides, setFoodOverrides] = useState<Record<string, number>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(localStorage.getItem(FOOD_OVERRIDES_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
 
   const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
 
@@ -644,12 +710,20 @@ export default function FoodCourtPage() {
         mapped[r.name] = r.estimate;
       });
 
-      setEstimates(mapped);
+      const mappedWithOverrides = { ...mapped };
+      RESTAURANTS.forEach((restaurant) => {
+        const override = foodOverrides[restaurant.id];
+        if (typeof override === 'number') {
+          mappedWithOverrides[restaurant.name] = override;
+        }
+      });
+
+      setEstimates(mappedWithOverrides);
       console.log("Mapped Estimates:", mapped);
     }
 
     loadEstimates();
-  }, []);
+  }, [foodOverrides]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -664,7 +738,21 @@ export default function FoodCourtPage() {
         {selectedRestaurant && (
           <FoodCard 
             data={selectedRestaurant} 
-            time={selectedTime} 
+            time={selectedTime ?? selectedRestaurant.waitTime}
+            onReportSubmitted={(reportedWait) => {
+              setSelectedTime(reportedWait);
+              setEstimates((prev) => ({
+                ...prev,
+                [selectedRestaurant.name]: reportedWait,
+              }));
+              setFoodOverrides((prev) => {
+                const updated = { ...prev, [selectedRestaurant.id]: reportedWait };
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(FOOD_OVERRIDES_KEY, JSON.stringify(updated));
+                }
+                return updated;
+              });
+            }}
           />
         )}
 
@@ -722,7 +810,7 @@ export default function FoodCourtPage() {
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <ul className="divide-y divide-gray-100">
                 {filteredList.map((item) => {
-                  const time = estimates[item.name];
+                  const time = foodOverrides[item.id] ?? estimates[item.name] ?? item.waitTime;
                   return(
                     <li key={item.id}>
                       <button 
@@ -743,8 +831,8 @@ export default function FoodCourtPage() {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${time !== undefined ? getWaitColour(time) : ''}`}>
-                            {time !== undefined ? `${time} Minutes 🕒` : 'Loading...'}
+                          <span className={`text-sm font-bold ${getWaitColour(time)}`}>
+                            {`${time} Minutes 🕒`}
                           </span>
                         </div>
                       </button>

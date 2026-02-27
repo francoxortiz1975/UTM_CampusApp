@@ -19,11 +19,18 @@ export default function SignUp() {
             return;
         }
         const newUser = await Signup(email, password);
-        const user = newUser != null ? await Login(email, password) : null;
-        if (user == null) {
-            alert('Invalid credentials!');
+        if (newUser == null) {
+            alert('Could not create account. This can happen if the email already exists or the backend is unreachable.');
             return;
         }
+
+        const user = await Login(email, password);
+        if (user == null) {
+            alert('Account created, but automatic sign-in failed. Please sign in manually.');
+            router.push('/signin');
+            return;
+        }
+
         router.push('/');
     };
 
