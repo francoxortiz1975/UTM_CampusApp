@@ -7,23 +7,32 @@ type ModalProps = {
     onClose: () => void;
     title?: string;
     children: ReactNode;
+
+    // Optional submit handler
     onSubmit?: () => void | Promise<void>;
-    submitLabel?: string;
-};
 
-export default function Modal({isOpen, onClose, title, children, onSubmit, submitLabel}: ModalProps) {
-    /** Override the primary button label (default "Submit") */
+    // Primary button customization
     primaryButtonText?: string;
-    /** Override the primary button action (default: onClose) */
-    primaryButtonOnClick?: () => void;
+    primaryButtonOnClick?: () => void | Promise<void>;
 };
 
-export default function Modal({isOpen, onClose, title, children, primaryButtonText = "Submit", primaryButtonOnClick}: ModalProps) {
+export default function Modal({
+    isOpen,
+    onClose,
+    title,
+    children,
+    onSubmit,
+    primaryButtonText = "Submit",
+    primaryButtonOnClick
+}: ModalProps) {
+
     if (!isOpen) return null;
 
-    const handleSubmit = async () => {
+    const handlePrimaryClick = async () => {
         try {
-            if (onSubmit) {
+            if (primaryButtonOnClick) {
+                await primaryButtonOnClick();
+            } else if (onSubmit) {
                 await onSubmit();
             }
         } finally {
@@ -40,9 +49,11 @@ export default function Modal({isOpen, onClose, title, children, primaryButtonTe
             />
 
             {/* Modal Box */}
-            <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-6 z-12">
+            <div className="relative bg-white rounded-xl shadow-lg w-full max-w-md p-6 z-50">
                 {title && (
-                    <h2 className="text-lg font-semibold text-black mb-4">{title}</h2>
+                    <h2 className="text-lg font-semibold text-black mb-4">
+                        {title}
+                    </h2>
                 )}
 
                 {children}
@@ -54,12 +65,9 @@ export default function Modal({isOpen, onClose, title, children, primaryButtonTe
                     >
                         Close
                     </button>
+
                     <button 
-                        onClick={handleSubmit}
-                        className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
-                    >
-                        {submitLabel ?? "Submit"}
-                        onClick={primaryButtonOnClick ?? onClose}
+                        onClick={handlePrimaryClick}
                         className="px-4 py-2 text-sm text-white rounded-lg bg-purple-600 hover:bg-purple-700"
                     >
                         {primaryButtonText}

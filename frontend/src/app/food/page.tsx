@@ -2,7 +2,6 @@
 
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
 import { Profile } from '../../types/Authentication';
@@ -430,7 +429,6 @@ const today = new Date().toLocaleDateString(undefined, {
 
 function FoodCard({ data, time }: { data: Restaurant, time: number }) {
   if (!data) return null;
-function FoodCard({ data }: { data: Restaurant }) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
