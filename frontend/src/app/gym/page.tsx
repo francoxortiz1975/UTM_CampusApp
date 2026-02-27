@@ -134,6 +134,21 @@ export default function Gym() {
             data={graphData.length ? graphData : dummyCapacityData}
             reportType="gym"
             reportResourceId={selectedGym.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+            onReportSubmitted={(reportedCapacity) => {
+              setEstimates((prev) => ({
+                ...prev,
+                [selectedGym]: reportedCapacity,
+              }));
+              setGraphData((prev) => {
+                const base = prev.length ? prev : dummyCapacityData;
+                const updated = [...base];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  capacity: reportedCapacity,
+                };
+                return updated;
+              });
+            }}
             additionalInfo={
               <>
                 <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>

@@ -456,7 +456,15 @@ function buildFoodTrendData(current: number): { time: string; wait: number }[] {
 
 // --- Components ---
 
-function FoodCard({ data, time }: { data: Restaurant; time: number }) {
+function FoodCard({
+  data,
+  time,
+  onReportSubmitted,
+}: {
+  data: Restaurant;
+  time: number;
+  onReportSubmitted?: (reportedWait: number) => void;
+}) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -497,6 +505,7 @@ function FoodCard({ data, time }: { data: Restaurant; time: number }) {
         return;
       }
 
+      onReportSubmitted?.(waitMinutes);
       alert("Report submitted.");
     } catch {
       alert("Could not reach backend.");
@@ -712,7 +721,14 @@ export default function FoodCourtPage() {
         {selectedRestaurant && (
           <FoodCard 
             data={selectedRestaurant} 
-            time={selectedTime ?? selectedRestaurant.waitTime} 
+            time={selectedTime ?? selectedRestaurant.waitTime}
+            onReportSubmitted={(reportedWait) => {
+              setSelectedTime(reportedWait);
+              setEstimates((prev) => ({
+                ...prev,
+                [selectedRestaurant.name]: reportedWait,
+              }));
+            }}
           />
         )}
 

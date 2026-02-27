@@ -213,6 +213,21 @@ export default function Parking() {
               data={graphData.length ? graphData : dummyCapacityData}
               reportType="parking"
               reportResourceId={selectedParkingLot.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}
+              onReportSubmitted={(reportedCapacity) => {
+                setEstimates((prev) => ({
+                  ...prev,
+                  [selectedParkingLot.name]: reportedCapacity,
+                }));
+                setGraphData((prev) => {
+                  const base = prev.length ? prev : dummyCapacityData;
+                  const updated = [...base];
+                  updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    capacity: reportedCapacity,
+                  };
+                  return updated;
+                });
+              }}
               additionalInfo={
                 <>
                   <p className="font-medium text-gray-700 mb-1">Rates:</p>

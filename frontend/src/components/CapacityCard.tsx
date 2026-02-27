@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from './Modal';
 import { Profile } from '../types/Authentication';
@@ -27,6 +27,7 @@ type CapacityCardProps = {
   additionalInfo?: React.ReactNode;
   reportType?: 'gym' | 'parking';
   reportResourceId?: string;
+  onReportSubmitted?: (reportedCapacity: number) => void;
 };
 
 const getColor = (p: number) =>
@@ -56,13 +57,18 @@ const apiBase =
     : 'http://localhost:5000';
 
 export default function CapacityCard({
-  title, location, data, additionalInfo, reportType, reportResourceId}: CapacityCardProps) {
+  title, location, data, additionalInfo, reportType, reportResourceId, onReportSubmitted}: CapacityCardProps) {
 
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [capacity, setCapacity] = useState(50);
+  const [chartData, setChartData] = useState<DataPoint[]>(data);
   const currentTime = getCurrentTimeLabel();
+
+  useEffect(() => {
+    setChartData(data);
+  }, [data]);
 
   const handleReportStatusClick = async () => {
     const user = await Profile();
@@ -113,6 +119,13 @@ export default function CapacityCard({
         return;
       }
 
+      setChartData((prev) => {
+        const base = prev.length ? prev : [{ time: currentTime, capacity }];
+        const updated = [...base];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], capacity };
+        return updated;
+      });
+      onReportSubmitted?.(capacity);
       alert('Report submitted.');
     } catch {
       alert('Could not reach backend.');
@@ -141,7 +154,7 @@ export default function CapacityCard({
       {/* Chart */}
       <div className="w-full h-56 mb-6">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <XAxis dataKey="time" tickFormatter={(value, index) => (index % 2 === 0 ? value : '')} />
             <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <Tooltip formatter={(v) => (v != null ? `${v}%` : '')} />
