@@ -137,6 +137,7 @@ async function getReport(location: string, time: number): Promise<number> {
     if (!res.ok) return 50;
 
     const payload = await res.json();
+    console.log("API returned:", payload); 
     const estimate = payload?.estimate;
     return typeof estimate === 'number' ? estimate : 50;
   } catch {
@@ -145,7 +146,7 @@ async function getReport(location: string, time: number): Promise<number> {
 }
 
 async function getFullDayReport(location: string): Promise<{ time: string; capacity: number }[]> {
-  const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
@@ -164,18 +165,8 @@ export default function Parking() {
   const [selectedParkingLot, setSelectedParkingLot] = useState<ParkingLot | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
-  const [capacityOverrides, setCapacityOverrides] = useState<Record<string, number>>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      return JSON.parse(localStorage.getItem(PARKING_OVERRIDES_KEY) ?? '{}');
-    } catch {
-      return {};
-    }
-  });
-  
-  useEffect(() => {
-      async function loadEstimates() {
-        const locations = [
+
+  const locations = [
           { key: 'p1', name: 'P1' },
           { key: 'p4', name: 'P4' },
           { key: 'p5', name: 'P5' },
@@ -185,8 +176,10 @@ export default function Parking() {
           { key: 'p9', name: 'P9' },
           { key: 'p10', name: 'P10' },
           { key: 'p11', name: 'P11' },
-          { key: 'cct', name: 'CCT Garage' },
+          { key: 'cct_garage', name: 'CCT Garage' },
         ];
+  
+  async function loadEstimates() {
   
         const time = now.getHours();
         const results = await Promise.all(
@@ -201,19 +194,12 @@ export default function Parking() {
           mapped[r.name] = r.estimate;
         });
 
-        const mappedWithOverrides = { ...mapped };
-        PARKINGLOTS.forEach((lot) => {
-          const override = capacityOverrides[parkingId(lot.name)];
-          if (typeof override === 'number') {
-            mappedWithOverrides[lot.name] = override;
-          }
-        });
-
-        setEstimates(mappedWithOverrides);
+        setEstimates(mapped);
       }
   
+  useEffect(() => {
       loadEstimates();
-    }, [capacityOverrides]);
+    }, []);
 
     return (
       <div className="min-h-screen bg-gray-100">
@@ -231,27 +217,10 @@ export default function Parking() {
               data={graphData.length ? graphData : dummyCapacityData}
               reportType="parking"
               reportResourceId={parkingId(selectedParkingLot.name)}
-              onReportSubmitted={(reportedCapacity) => {
-                setEstimates((prev) => ({
-                  ...prev,
-                  [selectedParkingLot.name]: reportedCapacity,
-                }));
-                setCapacityOverrides((prev) => {
-                  const updated = { ...prev, [parkingId(selectedParkingLot.name)]: reportedCapacity };
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem(PARKING_OVERRIDES_KEY, JSON.stringify(updated));
-                  }
-                  return updated;
-                });
-                setGraphData((prev) => {
-                  const base = prev.length ? prev : dummyCapacityData;
-                  const updated = [...base];
-                  updated[updated.length - 1] = {
-                    ...updated[updated.length - 1],
-                    capacity: reportedCapacity,
-                  };
-                  return updated;
-                });
+              onReportSubmitted={async () => {
+                await loadEstimates();
+                const data = await getFullDayReport(parkingId(selectedParkingLot.name));
+                setGraphData(data);
               }}
               additionalInfo={
                 <>
@@ -279,15 +248,9 @@ export default function Parking() {
                       onClick={async () => {
                         setSelectedParkingLot(lot);
 
-                        const locationKey = lot.name.toLowerCase().replace(/[^a-z]/g, '');
-                        const data = await getFullDayReport(locationKey);
-                        const override = capacityOverrides[parkingId(lot.name)];
-                        const adjustedData =
-                          typeof override === 'number' && data.length
-                            ? [...data.slice(0, -1), { ...data[data.length - 1], capacity: override }]
-                            : data;
+                        const data = await getFullDayReport(parkingId(lot.name));
 
-                        setGraphData(adjustedData);
+                        setGraphData(data);
                       }}
                       className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                     >
