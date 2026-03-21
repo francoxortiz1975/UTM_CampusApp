@@ -8,6 +8,7 @@ export default function Home() {
         { name: 'Gym Availability', description: 'Check gym occupancy.', href: '/gym' },
         { name: 'Parking Availability', description: 'Find available parking.', href: '/parking' },
         { name: 'Event Calendar', description: 'View upcoming club events.', href: '/events' },
+        { name: 'Lost And Found', description: 'View upcoming club events.', href: '/lostandfound' },
     ];
 
     return (
