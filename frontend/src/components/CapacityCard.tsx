@@ -99,10 +99,10 @@ export default function CapacityCard({
         credentials: 'include',
         body: JSON.stringify({
           user_id: user.id,
-          title: `${reportType}:${reportResourceId ?? title}`,
+          title: `${reportType}`,
           content: JSON.stringify({
             capacity,
-            location: location ?? null,
+            location: `${reportResourceId ?? title}`,
             reported_at: new Date().toISOString(),
           }),
         }),
