@@ -460,17 +460,18 @@ function buildFoodTrendData(current: number): { time: string; wait: number }[] {
 function FoodCard({
   data,
   time,
+  graph_data,
   onReportSubmitted,
 }: {
   data: Restaurant;
   time: number;
+  graph_data: {time: string; capacity: number}[];
   onReportSubmitted?: (reportedWait: number) => void;
 }) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [waitMinutes, setWaitMinutes] = useState(15);
-  const trendData = buildFoodTrendData(time);
 
   const handleReportSubmit = async () => {
     const user = await Profile();
@@ -543,11 +544,11 @@ function FoodCard({
       {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
       <div className="w-full h-40 rounded-lg mb-4 bg-gray-50 border border-gray-200 p-3">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={trendData}>
+          <LineChart data={graph_data}>
             <XAxis dataKey="time" />
             <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}m`} />
             <Tooltip formatter={(v) => `${v} min`} />
-            <Line type="monotone" dataKey="wait" strokeWidth={3} dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -637,14 +638,14 @@ function FoodCard({
 
 const now = new Date();
 
-async function getReport(location: string, time: number): Promise<number> {
+async function getReport(res_id: string, time: number): Promise<number> {
   const now = new Date();
 
   const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${location}`);
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${res_id}`);
     if (!res.ok) return 10;
 
     const payload = await res.json();
@@ -655,20 +656,28 @@ async function getReport(location: string, time: number): Promise<number> {
   }
 }
 
+async function getFullDayReport(location: string): Promise<{ time: string; capacity: number }[]> {
+  const month = now.getMonth() + 1;
+  const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+
+  try {
+    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/food/${location}`);
+
+    const payload = await res.json();
+    return payload;
+  } catch {
+    console.log("Failed to Fetch");
+    return []
+  }
+}
+
 export default function FoodCourtPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
-  const [foodOverrides, setFoodOverrides] = useState<Record<string, number>>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      return JSON.parse(localStorage.getItem(FOOD_OVERRIDES_KEY) ?? '{}');
-    } catch {
-      return {};
-    }
-  });
+  const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
 
   const selectedRestaurant = RESTAURANTS.find(r => r.id === selectedId);
 
@@ -687,21 +696,13 @@ export default function FoodCourtPage() {
     })
     .sort((a, b) => a.waitTime - b.waitTime); // Sort by fastest time
 
-
-  useEffect(() => {
-    async function loadEstimates() {
-      const locations = [
-        { key: 'subway', name: RESTAURANTS[0].name },
-        { key: 'second', name: RESTAURANTS[3].name },
-        { key: 'harveys', name: RESTAURANTS[1].name },
-        { key: 'starbucks', name: RESTAURANTS[2].name }
-      ];
+  async function loadEstimates() {
 
       const time = now.getHours();
       const results = await Promise.all(
-        locations.map(async (loc) => ({
+        RESTAURANTS.map(async (loc) => ({
           name: loc.name,
-          estimate: await getReport(loc.key, time)
+          estimate: await getReport(loc.id, time)
         }))
       );
 
@@ -710,20 +711,14 @@ export default function FoodCourtPage() {
         mapped[r.name] = r.estimate;
       });
 
-      const mappedWithOverrides = { ...mapped };
-      RESTAURANTS.forEach((restaurant) => {
-        const override = foodOverrides[restaurant.id];
-        if (typeof override === 'number') {
-          mappedWithOverrides[restaurant.name] = override;
-        }
-      });
-
-      setEstimates(mappedWithOverrides);
+      setEstimates(mapped);
       console.log("Mapped Estimates:", mapped);
+      return mapped;
     }
 
+  useEffect(() => {
     loadEstimates();
-  }, [foodOverrides]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -739,19 +734,19 @@ export default function FoodCourtPage() {
           <FoodCard 
             data={selectedRestaurant} 
             time={selectedTime ?? selectedRestaurant.waitTime}
-            onReportSubmitted={(reportedWait) => {
-              setSelectedTime(reportedWait);
-              setEstimates((prev) => ({
-                ...prev,
-                [selectedRestaurant.name]: reportedWait,
-              }));
-              setFoodOverrides((prev) => {
-                const updated = { ...prev, [selectedRestaurant.id]: reportedWait };
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem(FOOD_OVERRIDES_KEY, JSON.stringify(updated));
+            graph_data={graphData}
+            onReportSubmitted={async () => {
+              const newEstimates = await loadEstimates();
+
+              if (selectedId) {
+                const data = await getFullDayReport(selectedId);
+                setGraphData(data);
+
+                const restaurant = RESTAURANTS.find(r => r.id === selectedId);
+                if (restaurant) {
+                  setSelectedTime(newEstimates[restaurant.name]);
                 }
-                return updated;
-              });
+              }
             }}
           />
         )}
@@ -810,13 +805,15 @@ export default function FoodCourtPage() {
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <ul className="divide-y divide-gray-100">
                 {filteredList.map((item) => {
-                  const time = foodOverrides[item.id] ?? estimates[item.name] ?? item.waitTime;
+                  const time = estimates[item.name] ?? item.waitTime;
                   return(
                     <li key={item.id}>
                       <button 
                         onClick={async() => {
                           setSelectedId(item.id)
                           setSelectedTime(time);
+                          const data = await getFullDayReport(item.id);
+                          setGraphData(data);
                         }}
                         className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
                           selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''

@@ -7,6 +7,7 @@ export default function Home() {
         { name: 'Food Availability', description: 'See which cafeterias are open.', href: '/food' },
         { name: 'Gym Availability', description: 'Check gym occupancy.', href: '/gym' },
         { name: 'Parking Availability', description: 'Find available parking.', href: '/parking' },
+        { name: 'Event Calendar', description: 'View upcoming club events.', href: '/events' },
     ];
 
     return (
@@ -25,7 +26,7 @@ export default function Home() {
 
         {/* Apps */}
         <main className="flex justify-center mt-16 px-4 sm:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-6xl w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl w-full">
             {apps.map((app) => (
                 <Link
                 key={app.name}

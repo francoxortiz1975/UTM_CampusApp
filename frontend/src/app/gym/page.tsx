@@ -64,7 +64,7 @@ async function getReport(location: string, time: number): Promise<number> {
 }
 
 async function getFullDayReport(location: string): Promise<{ time: string; capacity: number }[]> {
-  const month = now.toLocaleString("en-US", { month: "long" }).toLowerCase();
+  const month = now.getMonth() + 1;
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
@@ -87,19 +87,8 @@ export default function Gym() {
   const [selectedGym, setSelectedGym] = useState<string | null>(null);
   const [estimates, setEstimates] = useState<Record<string, number>>({});
   const [graphData, setGraphData] = useState<{ time: string; capacity: number }[]>([]);
-  const [capacityOverrides, setCapacityOverrides] = useState<Record<string, number>>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      return JSON.parse(localStorage.getItem(GYM_OVERRIDES_KEY) ?? '{}');
-    } catch {
-      return {};
-    }
-  });
 
-
-  useEffect(() => {
-    async function loadEstimates() {
-      const locations = [
+  const locations = [
         { key: 'gyma', name: 'Gym A - RAWC' },
         { key: 'gymb', name: 'Gym B - RAWC' },
         { key: 'gymc', name: 'Gym C - RAWC' },
@@ -107,6 +96,17 @@ export default function Gym() {
         { key: 'pool', name: 'Pool - RAWC' },
         { key: 'tennis', name: 'Tennis Courts' }
       ];
+
+  const locations_map: Record<string, string> = {
+    'Gym A - RAWC': 'gyma',
+    'Gym B - RAWC': 'gymb',
+    'Gym C - RAWC': 'gymc',
+    'Weight Room - RAWC': 'weightroom',
+    'Pool - RAWC': 'pool',
+    'Tennis Courts': 'tennis'
+  };
+
+  async function loadEstimates() {
 
       const time = now.getHours();
       const results = await Promise.all(
@@ -121,18 +121,12 @@ export default function Gym() {
         mapped[r.name] = r.estimate;
       });
 
-      const mappedWithOverrides = { ...mapped };
-      GYMS.forEach((name) => {
-        const override = capacityOverrides[gymId(name)];
-        if (typeof override === 'number') {
-          mappedWithOverrides[name] = override;
-        }
-      });
-      setEstimates(mappedWithOverrides);
+      setEstimates(mapped);
     }
 
+  useEffect(() => {
     loadEstimates();
-  }, [capacityOverrides]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -146,31 +140,14 @@ export default function Gym() {
         {selectedGym && (
           <CapacityCard
             title={selectedGym}
-            location="RAWC"
+            location={'RAWC'}
             data={graphData.length ? graphData : dummyCapacityData}
             reportType="gym"
-            reportResourceId={gymId(selectedGym)}
-            onReportSubmitted={(reportedCapacity) => {
-              setEstimates((prev) => ({
-                ...prev,
-                [selectedGym]: reportedCapacity,
-              }));
-              setCapacityOverrides((prev) => {
-                const updated = { ...prev, [gymId(selectedGym)]: reportedCapacity };
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem(GYM_OVERRIDES_KEY, JSON.stringify(updated));
-                }
-                return updated;
-              });
-              setGraphData((prev) => {
-                const base = prev.length ? prev : dummyCapacityData;
-                const updated = [...base];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  capacity: reportedCapacity,
-                };
-                return updated;
-              });
+            reportResourceId={locations_map[selectedGym]}
+            onReportSubmitted={async () => {
+              await loadEstimates();
+              const graph_data = await getFullDayReport(locations_map[selectedGym]);
+              setGraphData(graph_data);
             }}
             additionalInfo={
               <>
@@ -198,15 +175,9 @@ export default function Gym() {
                     onClick={async () => {
                       setSelectedGym(name);
 
-                      const locationKey = name.toLowerCase().replace(/[^a-z]/g, '');
-                      const data = await getFullDayReport(locationKey);
-                      const override = capacityOverrides[gymId(name)];
-                      const adjustedData =
-                        typeof override === 'number' && data.length
-                          ? [...data.slice(0, -1), { ...data[data.length - 1], capacity: override }]
-                          : data;
+                      const data = await getFullDayReport(locations_map[name]);
 
-                      setGraphData(adjustedData);
+                      setGraphData(data);
                     }}
                     className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                   >

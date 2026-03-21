@@ -19,7 +19,7 @@ class Report(sqlalchemy.Model):
     title = sqlalchemy.Column(sqlalchemy.String(200), nullable=False)
     content = sqlalchemy.Column(sqlalchemy.Text, nullable=True)
     created_at = sqlalchemy.Column(
-        sqlalchemy.DateTime, nullable=False, default=datetime.utcnow
+        sqlalchemy.DateTime, nullable=False, default=datetime.now
     )
 
     # ── helpers ──────────────────────────────────────────────
@@ -50,7 +50,7 @@ class Report(sqlalchemy.Model):
     # ── fast query function ──────────────────────────────────
 
     @staticmethod
-    def query_reports(month=None, weekday=None, time_start=None, time_end=None, user_id=None):
+    def query_reports(month=None, weekday=None, time_start=None, time_end=None, user_id=None, title=None, location=None):
         """
         Perform a fast, indexed-friendly query on reports.
 
@@ -84,13 +84,11 @@ class Report(sqlalchemy.Model):
             query = query.filter(
                 func.cast(func.strftime("%m", Report.created_at), sqlalchemy.Integer) == month
             )
-
         # Filter by weekday (0=Sun … 6=Sat) — SQLite: strftime('%w', col)
         if weekday is not None:
             query = query.filter(
                 func.cast(func.strftime("%w", Report.created_at), sqlalchemy.Integer) == weekday
             )
-
         # Filter by time window — compare 'HH:MM' strings (lexicographic order works)
         if time_start is not None:
             query = query.filter(
@@ -100,8 +98,13 @@ class Report(sqlalchemy.Model):
             query = query.filter(
                 func.strftime("%H:%M", Report.created_at) <= time_end
             )
-
+        if title is not None:
+            query = query.filter(Report.title.contains(title))
+        if location is not None:
+            if title == 'gym' or title == 'parking':
+                query = query.filter(func.json_extract(Report.content, "$.location") == location)
+            elif title == 'food':
+                query = query.filter(func.json_extract(Report.content, "$.restaurant_id") == location)
         # Order newest first for convenience
         query = query.order_by(Report.created_at.desc())
-
         return query.all()

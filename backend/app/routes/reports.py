@@ -1,58 +1,210 @@
 # app/routes/reports.py
-from flask import Blueprint, request, session
+from flask import Blueprint, request, session, jsonify
 from ..components.report import Report
 from ..components.statusreport import StatusCode, StatusReport
 
 reports_bp = Blueprint("reports", __name__)
 #so each group of routes lives in its own file
 
-@reports_bp.route("/search", methods=["GET"])
-def search_reports():
-    """
-    example:
-    GET /reports/search?month=3&weekday=1&time_start=08:00&time_end=17:00&user_id=1
+WEEKDAYS = {'monday': 1,
+            'tuesday': 2,
+            'wednesday': 3,
+            'thursday': 4,
+            'friday': 5,
+            'saturday': 6,
+            'sunday': 0}
 
-    All query parameters are optional. the ones provided, are used as filters.
+PARKING_BASELINE = [5, 5, 5, 5, 5, 10, 10, 20, 25, 40, 45, 70, 80, 95, 95, 
+                    80, 70, 60, 55, 50, 35, 20, 15, 10]
+GYM_BASELINE =     [5, 5, 5, 5, 5, 10, 10, 20, 25, 40, 45, 70, 80, 95, 95, 
+                    80, 70, 60, 55, 50, 35, 20, 15, 10]
+FOOD_BASELINE =    [5, 5, 5, 5, 5, 5, 5, 5, 10, 20, 10, 10, 20, 30,
+                     30, 10, 10, 20, 30, 15, 10, 5, 5, 5]
 
-    month      – integer 1-12
-    weekday    – integer 0-6  (0 = Sunday … 6 = Saturday)
-    time_start – HH:MM inclusive lower bound
-    time_end   – HH:MM inclusive upper bound
-    user_id    – restrict to a single user's reports
-    """
+GYM_HOURS = {'gyma': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+             'gymb': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+             'gymc': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+             'weightroom': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+             'pool': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+             'tennis': [(10,17),(7,22),(7,22),(7,22),(7,22),(7,22),(10,17)],
+            }
+
+FOOD_HOURS = {
+'1': [(0,0),(10,22),(10,22),(10,22),(10,22),(10,18),(0,0)],
+'2': [(0,0),(10,21),(10,21),(10,21),(10,21),(10,16),(0,0)],
+'3': [(0,0),(8,19),(8,19),(8,19),(8,19),(8,16),(0,0)],
+'4': [(0,0),(8,17),(8,17),(8,17),(8,17),(8,15),(0,0)],
+'5': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'6': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'7': [(0,0),(10,21),(10,21),(10,21),(10,21),(10,16),(0,0)],
+'8': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'9': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,16),(0,0)],
+'10': [(0,0),(10,19),(10,19),(10,19),(10,19),(10,16),(0,0)],
+'11': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'12': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'13': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'14': [(0,0),(11,19),(11,19),(11,19),(11,19),(11,16),(0,0)],
+'15': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,16),(0,0)],
+'16': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,16),(0,0)],
+'17': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,16),(0,0)],
+'18': [(0,0),(11,21),(11,21),(11,21),(11,21),(11,15),(0,0)],
+'19': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,16),(0,0)],
+'20': [(0,0),(11,16),(11,16),(11,16),(11,16),(11,15),(0,0)],
+'21': [(0,0),(11,16),(11,16),(11,16),(11,16),(11,15),(0,0)],
+'22': [(0,0),(10,18),(10,18),(10,18),(10,18),(10,14),(0,0)],
+'23': [(0,0),(8,18),(8,18),(8,18),(8,18),(8,15),(0,0)],
+'24': [(0,0),(10,17),(10,17),(10,17),(10,17),(10,14),(0,0)],
+'25': [(0,0),(10,22),(10,22),(10,22),(10,22),(10,18),(0,0)],
+'26': [(0,0),(10,18),(10,18),(10,18),(10,18),(10,18),(0,0)],
+'27': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'28': [(0,0),(11,21),(11,21),(11,21),(11,21),(11,20),(0,0)],
+'29': [(0,0),(10,22),(10,22),(10,22),(10,22),(12,19),(0,0)],
+'30': [(0,0),(10,21),(10,21),(10,21),(10,21),(12,18),(0,0)],
+'31': [(0,0),(10,22),(10,22),(10,22),(10,22),(12,19),(0,0)],
+'32': [(0,0),(10,19),(10,19),(10,19),(10,19),(12,18),(0,0)],
+'33': [(0,0),(13,20),(13,20),(13,20),(13,20),(13,20),(0,0)],
+'34': [(0,0),(11,21),(11,21),(11,21),(11,21),(0,0),(0,0)],
+'35': [(0,0),(7,21),(7,21),(7,21),(7,21),(7,18),(0,0)],
+'36': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'37': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'38': [(0,0),(20,24),(20,24),(20,24),(20,24),(0,0),(0,0)],
+'39': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'40': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'41': [(0,0),(7,24),(7,24),(7,24),(7,24),(7,21),(0,0)],
+'42': [(0,0),(9,16),(9,16),(9,16),(9,16),(9,15),(0,0)],
+'43': [(0,0),(8,16),(8,16),(8,16),(8,16),(8,14),(0,0)],
+}
+
+
+import json
+
+@reports_bp.route("/<int:month>/<string:day>/<int:time>/<string:page>/<string:name>", methods=["GET"])
+def get_average(month, day, time, page, name):
     try:
-        month = request.args.get("month", type=int)
-        weekday = request.args.get("weekday", type=int)
-        time_start = request.args.get("time_start")
-        time_end = request.args.get("time_end")
-        user_id = request.args.get("user_id", type=int)
 
-        # Basic validation
-        if month is not None and not (1 <= month <= 12):
+        if not (1 <= month <= 12):
             status = StatusReport("month must be between 1 and 12", StatusCode.BAD_REQUEST)
             return status.json(), status.code()
 
-        if weekday is not None and not (0 <= weekday <= 6):
-            status = StatusReport("weekday must be between 0 (Sun) and 6 (Sat)", StatusCode.BAD_REQUEST)
+        if day not in WEEKDAYS.keys():
+            status = StatusReport("weekday is invalid", StatusCode.BAD_REQUEST)
             return status.json(), status.code()
 
+        start = f"{time:02d}:00"
+        end = f"{time:02d}:59"
         reports = Report.query_reports(
             month=month,
-            weekday=weekday,
-            time_start=time_start,
-            time_end=time_end,
-            user_id=user_id,
+            weekday=WEEKDAYS[day],
+            time_start=start,
+            time_end=end,
+            title=page,
+            location=name
         )
 
+        total = 0
+
+        for report in reports:
+            data = json.loads(report.content)
+            if page == 'food':
+                total += data["wait_minutes"]
+            else:
+                total += data["capacity"]
+
+        if len(reports) == 0:
+            if page == 'parking':
+                avg = PARKING_BASELINE[time]
+            elif page == 'food':
+                avg = FOOD_BASELINE[time]
+            elif page == 'gym':
+                avg = GYM_BASELINE[time]
+        else:
+            avg = total / len(reports)
+
         status = StatusReport(
-            [r.to_dict() for r in reports],
+            {"estimate": round(avg)},
             StatusCode.OK,
         )
+
         return status.json(), status.code()
 
     except Exception as e:
         status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
         return status.json(), status.code()
+
+@reports_bp.route("/<int:month>/<string:day>/<string:page>/<string:name>", methods=["GET"])
+def full_day_report(month, day, page, name):
+    if not (1 <= month <= 12):
+        status = StatusReport("month must be between 1 and 12", StatusCode.BAD_REQUEST)
+        return status.json(), status.code()
+
+    if day not in WEEKDAYS.keys():
+        status = StatusReport("weekday is invalid", StatusCode.BAD_REQUEST)
+        return status.json(), status.code()
+
+    report_data = []
+    try:
+
+        open, close = 0, 23
+
+        if page == 'gym':
+            open, close = GYM_HOURS[name][WEEKDAYS[day]]
+        elif page == 'food':
+            open, close = FOOD_HOURS[name][WEEKDAYS[day]]
+
+        for time in range(open, close + 1):
+            start = f"{time:02d}:00"
+            end = f"{time:02d}:59"
+            reports = Report.query_reports(
+                month=month,
+                weekday=WEEKDAYS[day],
+                time_start=start,
+                time_end=end,
+                title=page,
+                location=name
+            )
+            print(reports)
+            total = 0
+
+            for report in reports:
+                data = json.loads(report.content)
+                if page == 'food':
+                    total += data["wait_minutes"]
+                else:
+                    total += data["capacity"]
+
+            if len(reports) == 0:
+                if page == 'parking':
+                    avg = PARKING_BASELINE[time]
+                elif page == 'food':
+                    avg = FOOD_BASELINE[time]
+                elif page == 'gym':
+                    avg = GYM_BASELINE[time]
+            else:
+                avg = total / len(reports)
+            
+            r_time = time
+            if (time > 12):
+                r_time -= 12
+                r_time = str(r_time) + 'pm'
+            elif (time == 12):
+                r_time = str(r_time) + 'pm'
+            elif (time == 0):
+                r_time = 12
+                r_time = str(r_time) + 'am'
+            else:
+                r_time = str(r_time) + 'am'
+            
+            report_data.append({
+                "time": r_time,
+                "capacity": round(avg),
+            })
+        print(report_data)
+        return jsonify(report_data)
+
+    except Exception as e:
+        status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
+        return status.json(), status.code()
+
 
 
 @reports_bp.route("/", methods=["POST"], strict_slashes=False)
