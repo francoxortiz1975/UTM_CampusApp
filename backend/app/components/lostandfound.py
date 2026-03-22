@@ -33,9 +33,6 @@ class LostAndFound(sqlalchemy.Model):
             "item": self.item,
             "desc": self.desc,
             "created_at": self.created_at.isoformat(),
-            "month": self.created_at.month,
-            "weekday": self.created_at.strftime("%A"),
-            "time": self.created_at.strftime("%H:%M"),
         }
 
     @classmethod
