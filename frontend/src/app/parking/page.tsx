@@ -32,9 +32,9 @@ const dummyCapacityData = [
 ];
 
 const getColor = (p: number) =>
-  p < 30 ? 'text-green-600' :
-  p < 60 ? 'text-yellow-600' :
-  'text-red-600';
+  p < 30 ? 'text-green-600 dark:text-green-400' :
+  p < 60 ? 'text-yellow-600 dark:text-yellow-400' :
+  'text-red-600 dark:text-red-400';
 
 interface ParkingLot {
   name: string;
@@ -202,11 +202,11 @@ export default function Parking() {
     }, []);
 
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
         <Header />
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <div className="mx-auto max-w-6xl space-y-6 p-6">
           {/* Page Title */}
-          <h1 className="text-3xl font-bold text-gray-800">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">
             Parking Availability
           </h1>
           
@@ -224,17 +224,17 @@ export default function Parking() {
               }}
               additionalInfo={
                 <>
-                  <p className="font-medium text-gray-700 mb-1">Rates:</p>
-                  <p>Half-Hour Rates: <span className="text-black">${selectedParkingLot.halfHourRate.toFixed(2)}</span></p>
-                  <p>Daily Rates: <span className="text-black">${selectedParkingLot.dailyRate.toFixed(2)}</span></p>
+                  <p className="mb-1 font-medium text-gray-700 dark:text-zinc-300">Rates:</p>
+                  <p>Half-Hour Rates: <span className="text-black dark:text-zinc-100">${selectedParkingLot.halfHourRate.toFixed(2)}</span></p>
+                  <p>Daily Rates: <span className="text-black dark:text-zinc-100">${selectedParkingLot.dailyRate.toFixed(2)}</span></p>
                 </>
               }
             />
           )}
   
           {/* Projected Capactities */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold mb-4 text-black">
+          <div className="rounded-xl bg-white p-6 shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
+            <h3 className="mb-4 text-lg font-semibold text-black dark:text-zinc-100">
               Current Projected Capacities
             </h3>
   
@@ -252,9 +252,9 @@ export default function Parking() {
 
                         setGraphData(data);
                       }}
-                      className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
+                      className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-3 text-left transition hover:bg-gray-100 active:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
                     >
-                      <span className="text-sm font-medium text-black">
+                      <span className="text-sm font-medium text-black dark:text-zinc-100">
                         {lot.name}
                       </span>
 
