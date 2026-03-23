@@ -36,20 +36,20 @@ export default function SignUp() {
 
     return (
         // Main container
-        <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-50">
+        <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-50 dark:from-zinc-950 dark:to-zinc-900">
             <Header />
             {/* Sign Up form container */}
-            <main className="flex justify-center items-center mt-16 px-4">
-                <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full">
+            <main className="mt-16 flex items-center justify-center px-4">
+                <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md dark:bg-zinc-900 dark:shadow-zinc-950/50">
                     {/* Form title */}
-                    <h1 className="text-3xl font-bold mb-6 text-black text-center">
+                    <h1 className="mb-6 text-center text-3xl font-bold text-black dark:text-zinc-100">
                         Create Account
                     </h1>
                     {/* Sign Up form */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Email input section */}
                         <div>
-                            <label className="block text-black font-medium mb-2">
+                            <label className="mb-2 block font-medium text-black dark:text-zinc-200">
                                 Email
                             </label>
                             <input
@@ -57,13 +57,13 @@ export default function SignUp() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-600 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-blue-500"
                                 placeholder="Enter your email"
                             />
                         </div>
                         {/* Password input section */}
                         <div>
-                            <label className="block text-black font-medium mb-2">
+                            <label className="mb-2 block font-medium text-black dark:text-zinc-200">
                                 Password
                             </label>
                             <input
@@ -71,13 +71,13 @@ export default function SignUp() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-600 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-blue-500"
                                 placeholder="Enter your password"
                             />
                         </div>
                         {/* Confirm password input section */}
                         <div>
-                            <label className="block text-black font-medium mb-2">
+                            <label className="mb-2 block font-medium text-black dark:text-zinc-200">
                                 Confirm Password
                             </label>
                             <input
@@ -85,22 +85,22 @@ export default function SignUp() {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-600 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:ring-blue-500"
                                 placeholder="Confirm your password"
                             />
                         </div>
                         {/* Submit button */}
                         <button
                             type="submit"
-                            className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+                            className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                         >
                             Create Account
                         </button>
                     </form>
                     {/* Link to sign in page */}
-                    <p className="text-center text-black mt-4">
+                    <p className="mt-4 text-center text-black dark:text-zinc-200">
                         Already have an account?{' '}
-                        <Link href="/signin" className="text-blue-600 hover:text-blue-700 font-medium">
+                        <Link href="/signin" className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                             Sign in
                         </Link>
                     </p>
