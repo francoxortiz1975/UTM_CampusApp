@@ -1,10 +1,16 @@
 'use client'
 
-import Header from '../../components/Header';
-import { useState, useEffect } from 'react';
+import AppPageLayout from '../../components/AppPageLayout';
+import { useId, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../components/Modal';
 import { Profile } from '../../types/Authentication';
+import {
+  btnPrimary,
+  cardSurface,
+  focusRing,
+  inputBase,
+} from '../../lib/ui-classes';
 import {
   LineChart,
   Line,
@@ -420,11 +426,10 @@ const RESTAURANTS: Restaurant[] = [
 
 // --- Helpers ---
 
-// Colour logic for wait times (Green < 5m, Yellow < 10m, Red > 10m)
 const getWaitColour = (minutes: number) =>
-  minutes <= 5 ? 'text-green-600' :
-  minutes <= 10 ? 'text-yellow-600' :
-  'text-red-600';
+  minutes <= 5 ? 'text-[var(--success)]' :
+  minutes <= 10 ? 'text-[var(--warning)]' :
+  'text-[var(--danger)]';
 
 const today = new Date().toLocaleDateString(undefined, {
   weekday: 'long',
@@ -468,6 +473,7 @@ function FoodCard({
   graph_data: {time: string; capacity: number}[];
   onReportSubmitted?: (reportedWait: number) => void;
 }) {
+  const waitLabelId = useId();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -524,60 +530,78 @@ function FoodCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <div className="flex justify-between mb-2">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">{data.name}</h2>
-          <div className="flex items-center text-gray-500 text-sm mt-1">
-            <span className="font-medium mr-2">{data.building}</span>
-            <span>📍</span>
-          </div>
+    <article className={`${cardSurface} p-6`}>
+      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold text-[var(--fg)]">{data.name}</h2>
+          <p className="mt-1 text-sm text-[var(--fg-muted)]">{data.building}</p>
         </div>
-        <div className="text-right">
-             <h2 className="text-xs text-gray-400">{today}</h2>
-             <p className={`text-lg font-bold ${getWaitColour(time)}`}>
-               ~{time} min wait
-             </p>
+        <div className="text-left sm:text-right">
+          <p className="text-xs text-[var(--fg-muted)]">{today}</p>
+          <p className={`text-lg font-bold tabular-nums ${getWaitColour(time)}`}>
+            About {time} min wait
+          </p>
         </div>
-      </div>
+      </header>
 
-      {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
-      <div className="w-full h-40 rounded-lg mb-4 bg-gray-50 border border-gray-200 p-3">
+      <div
+        className="mb-4 h-40 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-page)] p-2"
+        role="img"
+        aria-label={`Wait time trend for ${data.name}`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={graph_data}>
-            <XAxis dataKey="time" />
-            <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}m`} />
-            <Tooltip formatter={(v) => `${v} min`} />
-            <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 3 }} />
+            <XAxis dataKey="time" tick={{ fill: 'var(--fg-muted)', fontSize: 11 }} />
+            <YAxis
+              domain={[0, 60]}
+              tick={{ fill: 'var(--fg-muted)', fontSize: 11 }}
+              tickFormatter={(v) => `${v}m`}
+            />
+            <Tooltip
+              formatter={(v) => `${v} min`}
+              contentStyle={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.5rem',
+                color: 'var(--fg)',
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="capacity"
+              stroke="var(--chart-line)"
+              strokeWidth={2}
+              dot={{ r: 2, fill: 'var(--chart-line)' }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {data.tags.map(tag => (
-          <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-            {tag}
-          </span>
+      <ul className="mb-4 flex flex-wrap gap-2" aria-label="Tags">
+        {data.tags.map((tag) => (
+          <li key={tag}>
+            <span className="inline-block rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-xs text-[var(--fg-muted)]">
+              {tag}
+            </span>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      {/* Opening Hours */}
-      <div className="text-sm text-gray-600 mb-4 border-t pt-4">
-        <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
-        <div className="grid grid-cols-2 gap-4">
-          <p>Mon - Thu: <span className="font-medium">{data.hours.monThu}</span></p>
-          <p>Fri: <span className="font-medium">{data.hours.fri}</span></p>
+      <div className="mb-4 border-t border-[var(--border)] pt-4 text-sm text-[var(--fg-muted)]">
+        <p className="mb-2 font-medium text-[var(--fg)]">Opening hours</p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+          <p>
+            Mon–Thu: <span className="font-medium text-[var(--fg)]">{data.hours.monThu}</span>
+          </p>
+          <p>
+            Fri: <span className="font-medium text-[var(--fg)]">{data.hours.fri}</span>
+          </p>
         </div>
       </div>
 
-      {/* Report Button */}
       <div className="flex justify-end">
-        <button 
-          onClick={handleReportStatusClick}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition"
-          >
-          ▶ Report Status
+        <button type="button" onClick={handleReportStatusClick} className={btnPrimary}>
+          Report wait time
         </button>
       </div>
 
@@ -591,7 +615,7 @@ function FoodCard({
           router.push('/signin');
         }}
       >
-        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+        <p className="text-sm text-[var(--fg-muted)]">Please sign in to submit a report.</p>
       </Modal>
 
       <Modal
@@ -600,20 +624,21 @@ function FoodCard({
         title="Report Food Wait Time"
         onSubmit={handleReportSubmit}
       >
-        <p className="text-sm text-gray-600 mb-4">
-          Let us know how long you waited.
-        </p>
+        <p className="mb-4 text-sm text-[var(--fg-muted)]">Let us know how long you waited.</p>
 
         <div className="space-y-2">
           <div className="mt-3 text-center">
-            <span className="text-sm text-black">Estimated Wait:</span>
+            <span id={waitLabelId} className="text-sm text-[var(--fg)]">
+              Estimated wait
+            </span>
 
             <div
-              className={`text-2xl font-bold transition-colors duration-200 ${getWaitColour(
+              className={`text-2xl font-bold tabular-nums motion-safe:transition-colors ${getWaitColour(
                 waitMinutes
               )}`}
+              aria-live="polite"
             >
-              {waitMinutes} mins
+              {waitMinutes} min
             </div>
           </div>
           <input
@@ -623,16 +648,16 @@ function FoodCard({
             step={1}
             value={waitMinutes}
             onChange={(e) => setWaitMinutes(Number(e.target.value))}
-            className={`
-              w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300
-              ${getWaitColour(waitMinutes)}
-            `}
+            aria-labelledby={waitLabelId}
+            aria-valuemin={0}
+            aria-valuemax={60}
+            aria-valuenow={waitMinutes}
+            aria-valuetext={`${waitMinutes} minutes`}
+            className={`h-2 w-full cursor-pointer rounded-lg bg-[var(--surface-muted)] accent-[var(--primary)] ${focusRing}`}
           />
         </div>
-
-
       </Modal>
-    </div>
+    </article>
   );
 }
 
@@ -672,6 +697,7 @@ async function getFullDayReport(location: string): Promise<{ time: string; capac
 }
 
 export default function FoodCourtPage() {
+  const searchId = useId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -721,15 +747,12 @@ export default function FoodCourtPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header />
-      
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
-        
-        {/* Page Title */}
-        <h1 className="text-3xl font-bold text-gray-800">Campus Food</h1>
-
-        {/* Selected Card (Popup/Detail View) */}
+    <AppPageLayout
+      title="Campus food"
+      description="Search and filter venues, then open one to see wait trends and report your experience."
+      contentMax="sm"
+    >
+      <div className="space-y-8">
         {selectedRestaurant && (
           <FoodCard 
             data={selectedRestaurant} 
@@ -751,94 +774,100 @@ export default function FoodCourtPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Left Column: Search & Filters */}
-          <div className="space-y-4">
-            {/* Search */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-6">
+          <div className={`${cardSurface} space-y-5 p-5 md:sticky md:top-20 md:self-start`}>
             <div>
-               <h3 className="text-sm font-bold text-gray-700 mb-2">Restaurant Search:</h3>
-               <div className="relative">
-                 <input 
-                   type="text" 
-                   placeholder="Hinted search text..." 
-                   className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-purple-500 placeholder-gray-500 text-gray-900"
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                 />
-                 <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
-               </div>
+              <label htmlFor={searchId} className="mb-2 block text-sm font-semibold text-[var(--fg)]">
+                Search restaurants
+              </label>
+              <input
+                id={searchId}
+                type="search"
+                placeholder="Search by name…"
+                className={inputBase}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoComplete="off"
+              />
             </div>
 
-            {/* Filters */}
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">Filters:</h3>
-              <div className="flex flex-wrap gap-2">
-                <button 
+            <fieldset className="min-w-0 border-0 p-0">
+              <legend className="mb-2 text-sm font-semibold text-[var(--fg)]">Filters</legend>
+              <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1 sm:max-h-none">
+                <button
+                  type="button"
+                  aria-pressed={activeFilter === null}
                   onClick={() => setActiveFilter(null)}
-                  className={`px-3 py-1 text-xs rounded-full border transition ${
-                    activeFilter === null ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
-                  }`}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium motion-safe:transition-colors ${
+                    activeFilter === null
+                      ? 'border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-fg)]'
+                      : 'border-[var(--border)] bg-[var(--surface-card)] text-[var(--fg-muted)] hover:border-[var(--primary)]'
+                  } ${focusRing}`}
                 >
                   All
                 </button>
-                {filters.map(filter => (
-                  <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter === activeFilter ? null : filter)}
-                    className={`px-3 py-1 text-xs rounded-full border transition ${
-                      activeFilter === filter 
-                        ? 'bg-purple-100 text-purple-800 border-purple-300' 
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+                {filters.map((filter) => {
+                  const on = activeFilter === filter;
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setActiveFilter(filter === activeFilter ? null : filter)}
+                      className={`max-w-full truncate rounded-full border px-3 py-1.5 text-xs font-medium motion-safe:transition-colors ${
+                        on
+                          ? 'border-[var(--primary)] bg-[var(--surface-muted)] text-[var(--fg)]'
+                          : 'border-[var(--border)] bg-[var(--surface-card)] text-[var(--fg-muted)] hover:border-[var(--primary)]'
+                      } ${focusRing}`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </fieldset>
           </div>
 
-          {/* Right Column: Estimated Waiting Times List */}
           <div className="md:col-span-2">
-            <h3 className="text-lg font-bold text-gray-800 mb-3">Estimated Waiting Times:</h3>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <ul className="divide-y divide-gray-100">
+            <h2 className="text-lg font-semibold text-[var(--fg)]">Wait times</h2>
+            <p className="mt-1 text-sm text-[var(--fg-muted)]">
+              Sorted shortest first. Open a venue for the chart and to report wait time.
+            </p>
+            <div className={`${cardSurface} mt-4 overflow-hidden p-0`}>
+              <ul className="divide-y divide-[var(--border)]">
                 {filteredList.map((item) => {
                   const time = estimates[item.name] ?? item.waitTime;
-                  return(
+                  const current = selectedId === item.id;
+                  return (
                     <li key={item.id}>
-                      <button 
-                        onClick={async() => {
-                          setSelectedId(item.id)
+                      <button
+                        type="button"
+                        aria-pressed={current}
+                        onClick={async () => {
+                          setSelectedId(item.id);
                           setSelectedTime(time);
                           const data = await getFullDayReport(item.id);
                           setGraphData(data);
                         }}
-                        className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
-                          selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
-                        }`}
+                        className={`flex w-full items-center justify-between gap-3 px-4 py-4 text-left motion-safe:transition-colors sm:px-6 ${
+                          current ? 'bg-[var(--surface-muted)]' : 'hover:bg-[var(--surface-muted)]/70'
+                        } ${focusRing}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-400 text-xl">✪</span> {/* Placeholder Icon */}
-                          <div>
-                            <p className="font-semibold text-gray-800">{item.name}</p>
-                            <p className="text-xs text-gray-400">{item.building}</p>
-                          </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[var(--fg)]">{item.name}</p>
+                          <p className="text-xs text-[var(--fg-muted)]">{item.building}</p>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${getWaitColour(time)}`}>
-                            {`${time} Minutes 🕒`}
-                          </span>
-                        </div>
+
+                        <span className={`shrink-0 text-sm font-bold tabular-nums ${getWaitColour(time)}`}>
+                          {time} min
+                        </span>
                       </button>
                     </li>
                   );
                 })}
-                
+
                 {filteredList.length === 0 && (
-                  <li className="p-6 text-center text-gray-500">
+                  <li className="p-6 text-center text-[var(--fg-muted)]">
                     No restaurants match your filters.
                   </li>
                 )}
@@ -848,6 +877,6 @@ export default function FoodCourtPage() {
 
         </div>
       </div>
-    </div>
+    </AppPageLayout>
   );
 }
