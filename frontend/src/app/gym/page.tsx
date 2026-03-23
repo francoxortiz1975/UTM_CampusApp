@@ -1,10 +1,8 @@
 'use client'
 
-import { ChevronRight } from 'lucide-react';
+import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
-import AppPageLayout from '../../components/AppPageLayout';
 import CapacityCard from '../../components/CapacityCard';
-import { cardSurface, focusRing } from '../../lib/ui-classes';
 
 //Temporary dummy data
 const dummyCapacityData = [
@@ -27,7 +25,9 @@ const dummyCapacityData = [
 ];
 
 const getColor = (p: number) =>
-  p < 30 ? 'text-[var(--success)]' : p < 60 ? 'text-[var(--warning)]' : 'text-[var(--danger)]';
+  p < 30 ? 'text-green-600' :
+  p < 60 ? 'text-yellow-600' :
+  'text-red-600';
 
 const now = new Date();
 const apiBase =
@@ -129,11 +129,14 @@ export default function Gym() {
   }, []);
 
   return (
-    <AppPageLayout
-      title="Gym availability"
-      description="See how busy each RAWC space is. Select a location for the full-day chart and to report how full it feels."
-    >
-      <div className="space-y-8">
+    <div className="min-h-screen bg-gray-100">
+      <Header />
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Page Title */}
+        <h1 className="text-3xl font-bold text-gray-800">
+          Gym Availability
+        </h1>
+        
         {selectedGym && (
           <CapacityCard
             title={selectedGym}
@@ -148,37 +151,27 @@ export default function Gym() {
             }}
             additionalInfo={
               <>
-                <p className="mb-1 font-medium text-[var(--fg)]">Opening hours</p>
-                <p>
-                  Mon–Fri: <span className="text-[var(--fg-muted)]">7am – 10pm</span>
-                </p>
-                <p>
-                  Sat–Sun: <span className="text-[var(--fg-muted)]">10am – 5pm</span>
-                </p>
+                <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
+                <p>Mon–Fri: <span className="text-black">7am – 10pm</span></p>
+                <p>Sat–Sun: <span className="text-black">10am – 5pm</span></p>
               </>
             }
           />
         )}
 
         {/* Projected Capactities */}
-        <section className={`${cardSurface} p-6`} aria-labelledby="gym-capacity-heading">
-          <h2 id="gym-capacity-heading" className="text-lg font-semibold text-[var(--fg)]">
-            Locations
-          </h2>
-          <p className="mt-1 text-sm text-[var(--fg-muted)]">
-            Percent shows estimated occupancy for right now. Select a row for details.
-          </p>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 text-black">
+            Current Projected Capacities
+          </h3>
 
-          <ul className="mt-5 space-y-2">
+          <ul className="space-y-3">
             {GYMS.map((name) => {
               const percent = estimates[name];
-              const selected = selectedGym === name;
 
               return (
                 <li key={name}>
                   <button
-                    type="button"
-                    aria-pressed={selected}
                     onClick={async () => {
                       setSelectedGym(name);
 
@@ -186,29 +179,24 @@ export default function Gym() {
 
                       setGraphData(data);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm motion-safe:transition-colors ${
-                      selected
-                        ? 'border-[var(--primary)] bg-[var(--surface-muted)]'
-                        : 'border-transparent bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)]'
-                    } ${focusRing}`}
+                    className="w-full flex justify-between items-center bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg px-4 py-3 text-left transition"
                   >
-                    <span className="font-medium text-[var(--fg)]">{name}</span>
+                    <span className="text-sm font-medium text-black">
+                      {name}
+                    </span>
 
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`font-semibold tabular-nums ${percent !== undefined ? getColor(percent) : 'text-[var(--fg-muted)]'}`}
-                      >
-                        {percent !== undefined ? `${percent}%` : 'Loading…'}
-                      </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--fg-muted)]" aria-hidden />
+                    <span className={`text-sm font-semibold ${percent !== undefined ? getColor(percent) : ''}`}>
+                      {percent !== undefined ? `${percent}%` : 'Loading...'}
                     </span>
                   </button>
                 </li>
               );
             })}
           </ul>
-        </section>
+
+        </div>
+
       </div>
-    </AppPageLayout>
+    </div>
   );
 }

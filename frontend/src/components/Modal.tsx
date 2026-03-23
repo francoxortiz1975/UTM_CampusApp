@@ -1,7 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useId, useRef } from 'react';
-import { btnPrimary, btnSecondary, focusRing } from '../lib/ui-classes';
+import { ReactNode } from 'react';
 
 type ModalProps = {
   isOpen: boolean;
@@ -24,9 +23,7 @@ export default function Modal({
   primaryButtonText,
   primaryButtonOnClick,
 }: ModalProps) {
-  const titleId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const previouslyFocused = useRef<HTMLElement | null>(null);
+  if (!isOpen) return null;
 
   const handlePrimaryAction = async () => {
     if (primaryButtonOnClick) {
@@ -46,71 +43,26 @@ export default function Modal({
     onClose();
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    previouslyFocused.current = document.activeElement as HTMLElement | null;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    document.body.style.overflow = 'hidden';
-
-    const t = window.setTimeout(() => {
-      const root = panelRef.current;
-      const focusable = root?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      focusable?.focus();
-    }, 0);
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = '';
-      window.clearTimeout(t);
-      previouslyFocused.current?.focus?.();
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="presentation"
-    >
-      <button
-        type="button"
-        aria-label="Close dialog"
-        className={`absolute inset-0 bg-[var(--fg)]/40 ${focusRing}`}
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? titleId : undefined}
-        className="relative z-10 w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-6 shadow-lg"
-      >
-        {title && (
-          <h2 id={titleId} className="mb-4 text-lg font-semibold text-[var(--fg)]">
-            {title}
-          </h2>
-        )}
+      <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+        {title && <h2 className="mb-4 text-lg font-semibold text-black">{title}</h2>}
 
         {children}
 
-        <div className="mt-6 flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={onClose} className={btnSecondary}>
+        <div className="mt-6 flex justify-between">
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-black hover:bg-gray-200"
+          >
             Close
           </button>
-          <button type="button" onClick={handlePrimaryAction} className={btnPrimary}>
+          <button
+            onClick={handlePrimaryAction}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700"
+          >
             {primaryButtonText ?? submitLabel ?? 'Submit'}
           </button>
         </div>
