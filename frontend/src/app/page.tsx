@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarDays, Car, Dumbbell, Utensils } from 'lucide-react';
+import { CalendarDays, Car, Dumbbell, Map, Utensils } from 'lucide-react';
 import Header from '../components/Header';
 
 const apps = [
@@ -35,6 +35,14 @@ const apps = [
         accent:
             'bg-violet-100 text-violet-800 ring-violet-200/80 dark:bg-violet-950/60 dark:text-violet-200 dark:ring-violet-800/50',
     },
+    {
+        name: 'Interactive Map',
+        description: 'Explore key campus buildings and jump to services inside them.',
+        href: '/map',
+        icon: Map,
+        accent:
+            'bg-rose-100 text-rose-800 ring-rose-200/80 dark:bg-rose-950/60 dark:text-rose-200 dark:ring-rose-800/50',
+    },
 ] as const;
 
 export default function Home() {
@@ -58,8 +66,8 @@ export default function Home() {
                         Everything you need on campus
                     </h1>
                     <p className="mt-4 text-pretty text-lg leading-relaxed text-gray-600 sm:text-xl dark:text-zinc-400">
-                        Real-time food, gym, parking, and events in one place. Choose a
-                        service below to get started.
+                        Real-time food, gym, parking, events, and campus navigation in
+                        one place. Choose a service below to get started.
                     </p>
                 </header>
 
@@ -73,7 +81,7 @@ export default function Home() {
                     >
                         Choose a service
                     </h2>
-                    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+                    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-6">
                         {apps.map((app) => {
                             const Icon = app.icon;
                             return (
