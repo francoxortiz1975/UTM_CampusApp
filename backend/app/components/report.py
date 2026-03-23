@@ -2,6 +2,59 @@ from datetime import datetime
 from ..extensions import sqlalchemy
 from sqlalchemy import func
 
+class BluetoothReport(sqlalchemy.Model):
+    """
+    Model representing a bluetooth report stored in the database.
+    Each report is linked to a bluetooth scanner and timestamped so it can be
+    queried by month, weekday, and time.
+    """
+
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    title = sqlalchemy.Column(sqlalchemy.String(200), nullable=False)
+    content = sqlalchemy.Column(sqlalchemy.Text, nullable=True)
+
+    # ── helpers ──────────────────────────────────────────────
+
+    def add(self):
+        sqlalchemy.session.add(self)
+
+    def commit(self):
+        sqlalchemy.session.commit()
+
+    def save(self):
+        self.add()
+        self.commit()
+
+    def to_dict(self):
+        """report in a dictionary format"""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+        }
+
+    # ── fast query function ──────────────────────────────────
+
+    @staticmethod
+    def query_reports(title=None, location=None):
+        """
+        Perform a fast, indexed-friendly query on reports.
+
+        Returns
+        -------
+        list[BluetoothReport]
+            A list of BluetoothReport objects matching all supplied filters.
+        """
+        query = BluetoothReport.query
+
+        if title is not None:
+            query = query.filter(BluetoothReport.title.contains(title))
+        if location is not None:
+            query = query.filter(func.json_extract(BluetoothReport.content, "$.location") == location)
+        # Order newest first for convenience
+        query = query.order_by(BluetoothReport.created_at.desc())
+        return query.all()
+
 
 class Report(sqlalchemy.Model):
     """
