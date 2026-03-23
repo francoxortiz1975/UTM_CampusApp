@@ -1,84 +1,88 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
-import Header from '../../components/Header';
+import AuthPageLayout from '../../components/AuthPageLayout';
 import { Login } from '../../types/Authentication';
 import { useRouter } from 'next/navigation';
+import { btnPrimary, cardSurface, inputBase } from '../../lib/ui-classes';
 
 export default function SignIn() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const router = useRouter();
+  const emailId = useId();
+  const passwordId = useId();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const router = useRouter();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const user = await Login(email, password);
-        if (user == null) {
-            alert('Invalid credentials!');
-            return;
-        }
-        router.push('/');
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const user = await Login(email, password);
+    if (user == null) {
+      alert('Invalid credentials!');
+      return;
+    }
+    router.push('/');
+  };
 
-    return (
-        // Main container
-        <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-50">
-            <Header />
-            {/* Sign In form container */}
-            <main className="flex justify-center items-center mt-16 px-4">
-                <div className="bg-white p-8 rounded-xl shadow-md max-w-md w-full">
-                    {/* Form title */}
-                    <h1 className="text-3xl font-bold mb-6 text-black text-center">
-                        Sign In
-                    </h1>
-                    {/* Sign In form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Email input section */}
-                        <div>
-                            <label className="block text-black font-medium mb-2">
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black"
-                                placeholder="Enter your email"
-                            />
-                        </div>
-                        {/* Password input section */}
-                        <div>
-                            <label className="block text-black font-medium mb-2">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-black"
-                                placeholder="Enter your password"
-                            />
-                        </div>
-                        {/* Submit button */}
-                        <button
-                            type="submit"
-                            className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Sign In
-                        </button>
-                    </form>
-                    {/* Link to sign up page */}
-                    <p className="text-center text-black mt-4">
-                        Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-                            Create one
-                        </Link>
-                    </p>
-                </div>
-            </main>
-        </div>
-    );
+  return (
+    <AuthPageLayout>
+      <div className={`${cardSurface} p-8`}>
+        <p className="text-center text-xs font-medium uppercase tracking-wide text-[var(--fg-muted)]">
+          Campus dashboard
+        </p>
+        <h1 className="mt-2 text-center text-2xl font-bold text-[var(--fg)] sm:text-3xl">
+          Sign in
+        </h1>
+        <p className="mt-2 text-center text-sm text-[var(--fg-muted)]">
+          Use your campus account credentials.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+          <div>
+            <label htmlFor={emailId} className="mb-1.5 block text-sm font-medium text-[var(--fg)]">
+              Email
+            </label>
+            <input
+              id={emailId}
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={inputBase}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor={passwordId} className="mb-1.5 block text-sm font-medium text-[var(--fg)]">
+              Password
+            </label>
+            <input
+              id={passwordId}
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={inputBase}
+              placeholder="Enter your password"
+            />
+          </div>
+          <button type="submit" className={`${btnPrimary} w-full`}>
+            Sign in
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-[var(--fg-muted)]">
+          Don&apos;t have an account?{' '}
+          <Link
+            href="/signup"
+            className="font-semibold text-[var(--primary)] underline-offset-2 hover:underline"
+          >
+            Create one
+          </Link>
+        </p>
+      </div>
+    </AuthPageLayout>
+  );
 }

@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MapPin } from 'lucide-react';
 import Modal from './Modal';
 import { Profile } from '../types/Authentication';
+import { btnPrimary, cardSurface, focusRing } from '../lib/ui-classes';
 import {
   LineChart,
   Line,
@@ -31,9 +33,7 @@ type CapacityCardProps = {
 };
 
 const getColor = (p: number) =>
-  p < 30 ? 'text-green-600' :
-  p < 60 ? 'text-yellow-600' :
-  'text-red-600';
+  p < 30 ? 'text-[var(--success)]' : p < 60 ? 'text-[var(--warning)]' : 'text-[var(--danger)]';
 
 const today = () =>
   new Date().toLocaleDateString(undefined, {
@@ -59,6 +59,7 @@ const apiBase =
 export default function CapacityCard({
   title, location, data, additionalInfo, reportType, reportResourceId, onReportSubmitted}: CapacityCardProps) {
 
+  const capacityLabelId = useId();
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -132,36 +133,64 @@ export default function CapacityCard({
     }
   };
 
+  const latest =
+    chartData.length > 0 ? chartData[chartData.length - 1]?.capacity : undefined;
+
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h2 className="text-xl text-black font-semibold">{title}</h2>
+    <article className={`${cardSurface} p-6`}>
+      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold text-[var(--fg)]">{title}</h2>
+          {location && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-[var(--fg-muted)]">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+              <span>{location}</span>
+            </p>
+          )}
         </div>
+        <p className="text-xs tabular-nums text-[var(--fg-muted)]">{today()}</p>
+      </header>
 
-        <div>
-          <h2 className="text-xs font-Menlo text-gray-400">{today()}</h2>
-        </div>
-
-        {location && (
-          <div className="flex items-center text-black text-xl font-semibold">
-            <span>{location} 📍</span>
-          </div>
-        )}
-      </div>
-
-      {/* Chart */}
-      <div className="w-full h-56 mb-6">
+      <div
+        className="mb-6 h-56 w-full"
+        role="img"
+        aria-label={
+          typeof latest === 'number'
+            ? `Occupancy trend chart. Latest value about ${latest} percent.`
+            : 'Occupancy trend chart.'
+        }
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <XAxis dataKey="time" tickFormatter={(value, index) => (index % 2 === 0 ? value : '')} />
-            <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(v) => (v != null ? `${v}%` : '')} />
-            <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 4 }} />
+            <XAxis
+              dataKey="time"
+              tick={{ fill: 'var(--fg-muted)', fontSize: 12 }}
+              tickFormatter={(value, index) => (index % 2 === 0 ? value : '')}
+            />
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fill: 'var(--fg-muted)', fontSize: 12 }}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <Tooltip
+              formatter={(v) => (v != null ? `${v}%` : '')}
+              contentStyle={{
+                background: 'var(--surface-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '0.5rem',
+                color: 'var(--fg)',
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="capacity"
+              stroke="var(--chart-line)"
+              strokeWidth={2}
+              dot={{ r: 3, fill: 'var(--chart-line)' }}
+            />
             <ReferenceLine
               x={currentTime}
-              stroke="red"
+              stroke="var(--danger)"
               strokeDasharray="3 3"
               label="Now"
             />
@@ -171,18 +200,12 @@ export default function CapacityCard({
 
       {/* Opening Hours */}
       {additionalInfo && (
-        <div className="text-sm text-gray-600 mb-4">
-          {additionalInfo}
-        </div>
+        <div className="mb-4 text-sm text-[var(--fg-muted)]">{additionalInfo}</div>
       )}
 
-      {/* Report Button */}
       <div className="flex justify-end">
-        <button
-          onClick={handleReportStatusClick}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-        >
-          ▶ Report Status
+        <button type="button" onClick={handleReportStatusClick} className={btnPrimary}>
+          Report status
         </button>
       </div>
 
@@ -197,7 +220,7 @@ export default function CapacityCard({
           router.push('/signin');
         }}
       >
-        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+        <p className="text-sm text-[var(--fg-muted)]">Please sign in to submit a report.</p>
       </Modal>
 
       {/* Report Modal */}
@@ -207,13 +230,15 @@ export default function CapacityCard({
         title="Report Status"
         onSubmit={handleReportSubmit}
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="mb-4 text-sm text-[var(--fg-muted)]">
           Let us know how full {title} feels right now.
         </p>
 
-        <div className="text-center mb-3">
-          <span className="text-sm text-black">Current Capacity:</span>
-          <div className={`text-2xl font-bold ${getColor(capacity)}`}>
+        <div className="mb-3 text-center">
+          <span id={capacityLabelId} className="text-sm text-[var(--fg)]">
+            Current capacity
+          </span>
+          <div className={`text-2xl font-bold tabular-nums ${getColor(capacity)}`} aria-live="polite">
             {capacity}%
           </div>
         </div>
@@ -224,9 +249,14 @@ export default function CapacityCard({
           max={100}
           value={capacity}
           onChange={(e) => setCapacity(Number(e.target.value))}
-          className="w-full h-2 rounded-lg cursor-pointer bg-gray-300"
+          aria-labelledby={capacityLabelId}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={capacity}
+          aria-valuetext={`${capacity} percent full`}
+          className={`h-2 w-full cursor-pointer rounded-lg bg-[var(--surface-muted)] accent-[var(--primary)] ${focusRing}`}
         />
       </Modal>
-    </div>
+    </article>
   );
 }
