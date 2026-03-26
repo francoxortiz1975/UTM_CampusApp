@@ -57,6 +57,16 @@ export default function EventsPage() {
   const [selectedClub, setSelectedClub] = useState<string>('all');
   const [showPastEvents, setShowPastEvents] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    club: 'CS Club',
+    date: new Date().toISOString().split('T')[0],
+    startTime: '18:00',
+    endTime: '19:00',
+    location: '',
+    description: ''
+  });
 
   useEffect(() => {
     setEvents(MOCK_EVENTS);
@@ -145,6 +155,36 @@ export default function EventsPage() {
 
   const allClubs = Array.from(new Set(events.map(e => e.club))).sort();
 
+  const handleCreateEvent = () => {
+    if (!formData.title || !formData.club || !formData.date) {
+      alert('Please fill in title, club, and date');
+      return;
+    }
+
+    const newEvent: Event = {
+      id: String(events.length + 1),
+      title: formData.title,
+      club: formData.club,
+      date: formData.date,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      description: formData.description
+    };
+
+    setEvents([...events, newEvent]);
+    setIsCreateEventOpen(false);
+    setFormData({
+      title: '',
+      club: 'CS Club',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '18:00',
+      endTime: '19:00',
+      location: '',
+      description: ''
+    });
+  };
+
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
   const monthName = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -186,7 +226,15 @@ export default function EventsPage() {
       <div className="flex">
         {/* Left Sidebar */}
         <aside className="min-h-screen w-64 bg-white p-6 shadow-md dark:bg-zinc-900 dark:shadow-zinc-950/50">
-          <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-zinc-100">Filters</h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Filters</h3>
+            <button
+              onClick={() => setIsCreateEventOpen(true)}
+              className="rounded bg-indigo-600 px-2 py-1 text-sm text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            >
+              + Event
+            </button>
+          </div>
           
           {/* Search Bar */}
           <div className="mb-6">
@@ -355,6 +403,144 @@ export default function EventsPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {null}
       </Modal>
+
+      {/* Create Event Modal */}
+      {isCreateEventOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setIsCreateEventOpen(false)}
+        >
+          <div
+            className="w-96 overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white dark:from-indigo-600 dark:to-purple-600">
+              <div className="flex items-start justify-between">
+                <h2 className="text-2xl font-bold">Create Event</h2>
+                <button
+                  onClick={() => setIsCreateEventOpen(false)}
+                  className="text-2xl font-bold hover:text-gray-200"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4 p-6">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                  placeholder="e.g., CS Club Meeting"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Club *
+                </label>
+                <select
+                  value={formData.club}
+                  onChange={(e) => setFormData({...formData, club: e.target.value})}
+                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  <option value="CS Club">CS Club</option>
+                  <option value="Tech Society">Tech Society</option>
+                  <option value="Math Society">Math Society</option>
+                  <option value="Physics Club">Physics Club</option>
+                  <option value="Engineering Society">Engineering Society</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    Start Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                    className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    End Time *
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                    className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                  placeholder="e.g., BA 1170"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100"
+                  placeholder="Event details..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-3 bg-gray-50 px-6 py-4 dark:bg-zinc-800">
+              <button
+                onClick={() => setIsCreateEventOpen(false)}
+                className="rounded px-4 py-2 text-gray-700 hover:bg-gray-200 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateEvent}
+                className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+              >
+                Create Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
