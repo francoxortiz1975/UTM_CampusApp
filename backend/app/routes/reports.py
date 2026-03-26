@@ -1,6 +1,6 @@
 # app/routes/reports.py
 from flask import Blueprint, request, session, jsonify
-from ..components.report import Report
+from ..components.report import Report, BluetoothReport
 from ..components.statusreport import StatusCode, StatusReport
 
 reports_bp = Blueprint("reports", __name__)
@@ -105,10 +105,7 @@ def get_average(month, day, time, page, name):
 
         for report in reports:
             data = json.loads(report.content)
-            if page == 'food':
-                total += data["wait_minutes"]
-            else:
-                total += data["capacity"]
+            total += data["num_devices"]
 
         if len(reports) == 0:
             if page == 'parking':
@@ -119,6 +116,20 @@ def get_average(month, day, time, page, name):
                 avg = GYM_BASELINE[time]
         else:
             avg = total / len(reports)
+
+        bluetooth_reports = BluetoothReport.query_reports(
+            title=page,
+            location=name
+        )
+
+        bluetooth_total = 0
+
+        for report in bluetooth_reports:
+            data = json.loads(report.content)
+            bluetooth_total += data["num_devices"]
+
+        if len(bluetooth_reports) != 0:
+            avg = avg + bluetooth_total / len(bluetooth_reports)
 
         status = StatusReport(
             {"estimate": round(avg)},
@@ -181,6 +192,20 @@ def full_day_report(month, day, page, name):
                     avg = GYM_BASELINE[time]
             else:
                 avg = total / len(reports)
+
+            bluetooth_reports = BluetoothReport.query_reports(
+                title=page,
+                location=name
+            )
+
+            bluetooth_total = 0
+
+            for report in bluetooth_reports:
+                data = json.loads(report.content)
+                bluetooth_total += data["num_devices"]
+
+            if len(bluetooth_reports) != 0:
+                avg = avg + bluetooth_total / len(bluetooth_reports)
             
             r_time = time
             if (time > 12):
@@ -227,6 +252,31 @@ def create_report():
         return status.json(), status.code()
 
     report = Report(user_id=user_id, title=title, content=content)
+    report.save()
+
+    status = StatusReport(report.to_dict(), StatusCode.CREATED)
+    return status.json(), status.code()
+
+@reports_bp.route("/bluetoothscanner/", methods=["POST"], strict_slashes=False)
+def create_bluetooth_report():
+    """
+    POST /reports/bluetoothscanner/
+    Body: { "title": "...", "content": "..." }
+    """
+    data = request.json or {}
+    device_id = session.get("device_id")
+    title = data.get("title")
+    content = data.get("content", "")
+
+    if not device_id:
+        status = StatusReport("You must be logged in to submit a report", StatusCode.UNAUTHORIZED)
+        return status.json(), status.code()
+
+    if not title:
+        status = StatusReport("title is required", StatusCode.BAD_REQUEST)
+        return status.json(), status.code()
+
+    report = BluetoothReport(id=device_id, title=title, content=content)
     report.save()
 
     status = StatusReport(report.to_dict(), StatusCode.CREATED)

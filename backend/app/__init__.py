@@ -16,9 +16,11 @@ def create_app():
     # Init the routes
     from .routes.authentication import auth_bp
     from .routes.reports import reports_bp
+    from .routes.calendar import calendar_bp
     from .routes.lostandfound import lostandfound_bp
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(reports_bp, url_prefix="/reports")
+    app.register_blueprint(calendar_bp, url_prefix="/calendar")
     app.register_blueprint(lostandfound_bp, url_prefix="/lostandfound")
 
     # Init the sql tables

@@ -31,9 +31,9 @@ type CapacityCardProps = {
 };
 
 const getColor = (p: number) =>
-  p < 30 ? 'text-green-600' :
-  p < 60 ? 'text-yellow-600' :
-  'text-red-600';
+  p < 30 ? 'text-green-600 dark:text-green-400' :
+  p < 60 ? 'text-yellow-600 dark:text-yellow-400' :
+  'text-red-600 dark:text-red-400';
 
 const today = () =>
   new Date().toLocaleDateString(undefined, {
@@ -133,35 +133,47 @@ export default function CapacityCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6">
+    <div className="rounded-xl bg-white p-6 shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="mb-4 flex items-start justify-between">
         <div>
-          <h2 className="text-xl text-black font-semibold">{title}</h2>
+          <h2 className="text-xl font-semibold text-black dark:text-zinc-100">{title}</h2>
         </div>
 
         <div>
-          <h2 className="text-xs font-Menlo text-gray-400">{today()}</h2>
+          <h2 className="font-Menlo text-xs text-gray-400 dark:text-zinc-500">{today()}</h2>
         </div>
 
         {location && (
-          <div className="flex items-center text-black text-xl font-semibold">
+          <div className="flex items-center text-xl font-semibold text-black dark:text-zinc-100">
             <span>{location} 📍</span>
           </div>
         )}
       </div>
 
       {/* Chart */}
-      <div className="w-full h-56 mb-6">
+      <div className="mb-6 h-56 w-full text-indigo-600 dark:text-indigo-400">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <XAxis dataKey="time" tickFormatter={(value, index) => (index % 2 === 0 ? value : '')} />
-            <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(v) => (v != null ? `${v}%` : '')} />
-            <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 4 }} />
+            <XAxis
+              dataKey="time"
+              tick={{ fill: 'currentColor' }}
+              tickFormatter={(value, index) => (index % 2 === 0 ? value : '')}
+            />
+            <YAxis domain={[0, 100]} tick={{ fill: 'currentColor' }} tickFormatter={(v) => `${v}%`} />
+            <Tooltip
+              formatter={(v) => (v != null ? `${v}%` : '')}
+              contentStyle={{
+                backgroundColor: 'var(--background)',
+                border: '1px solid rgba(128, 128, 128, 0.35)',
+                borderRadius: '0.5rem',
+                color: 'var(--foreground)',
+              }}
+            />
+            <Line type="monotone" dataKey="capacity" stroke="currentColor" strokeWidth={3} dot={{ r: 4 }} />
             <ReferenceLine
               x={currentTime}
-              stroke="red"
+              stroke="#ef4444"
               strokeDasharray="3 3"
               label="Now"
             />
@@ -171,7 +183,7 @@ export default function CapacityCard({
 
       {/* Opening Hours */}
       {additionalInfo && (
-        <div className="text-sm text-gray-600 mb-4">
+        <div className="mb-4 text-sm text-gray-600 dark:text-zinc-400">
           {additionalInfo}
         </div>
       )}
@@ -180,7 +192,7 @@ export default function CapacityCard({
       <div className="flex justify-end">
         <button
           onClick={handleReportStatusClick}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
         >
           ▶ Report Status
         </button>
@@ -197,7 +209,7 @@ export default function CapacityCard({
           router.push('/signin');
         }}
       >
-        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+        <p className="text-sm text-gray-600 dark:text-zinc-400">Please sign in to submit a report.</p>
       </Modal>
 
       {/* Report Modal */}
@@ -207,12 +219,12 @@ export default function CapacityCard({
         title="Report Status"
         onSubmit={handleReportSubmit}
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="mb-4 text-sm text-gray-600 dark:text-zinc-400">
           Let us know how full {title} feels right now.
         </p>
 
-        <div className="text-center mb-3">
-          <span className="text-sm text-black">Current Capacity:</span>
+        <div className="mb-3 text-center">
+          <span className="text-sm text-black dark:text-zinc-200">Current Capacity:</span>
           <div className={`text-2xl font-bold ${getColor(capacity)}`}>
             {capacity}%
           </div>
@@ -224,7 +236,7 @@ export default function CapacityCard({
           max={100}
           value={capacity}
           onChange={(e) => setCapacity(Number(e.target.value))}
-          className="w-full h-2 rounded-lg cursor-pointer bg-gray-300"
+          className="h-2 w-full cursor-pointer rounded-lg bg-gray-300 dark:bg-zinc-600"
         />
       </Modal>
     </div>

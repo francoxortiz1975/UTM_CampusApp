@@ -422,9 +422,9 @@ const RESTAURANTS: Restaurant[] = [
 
 // Colour logic for wait times (Green < 5m, Yellow < 10m, Red > 10m)
 const getWaitColour = (minutes: number) =>
-  minutes <= 5 ? 'text-green-600' :
-  minutes <= 10 ? 'text-yellow-600' :
-  'text-red-600';
+  minutes <= 5 ? 'text-green-600 dark:text-green-400' :
+  minutes <= 10 ? 'text-yellow-600 dark:text-yellow-400' :
+  'text-red-600 dark:text-red-400';
 
 const today = new Date().toLocaleDateString(undefined, {
   weekday: 'long',
@@ -524,17 +524,17 @@ function FoodCard({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <div className="flex justify-between mb-2">
+    <div className="rounded-xl bg-white p-6 shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
+      <div className="mb-2 flex justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">{data.name}</h2>
-          <div className="flex items-center text-gray-500 text-sm mt-1">
-            <span className="font-medium mr-2">{data.building}</span>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-zinc-100">{data.name}</h2>
+          <div className="mt-1 flex items-center text-sm text-gray-500 dark:text-zinc-400">
+            <span className="mr-2 font-medium">{data.building}</span>
             <span>📍</span>
           </div>
         </div>
         <div className="text-right">
-             <h2 className="text-xs text-gray-400">{today}</h2>
+             <h2 className="text-xs text-gray-400 dark:text-zinc-500">{today}</h2>
              <p className={`text-lg font-bold ${getWaitColour(time)}`}>
                ~{time} min wait
              </p>
@@ -542,32 +542,40 @@ function FoodCard({
       </div>
 
       {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
-      <div className="w-full h-40 rounded-lg mb-4 bg-gray-50 border border-gray-200 p-3">
+      <div className="mb-4 h-40 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-indigo-400">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={graph_data}>
-            <XAxis dataKey="time" />
-            <YAxis domain={[0, 60]} tickFormatter={(v) => `${v}m`} />
-            <Tooltip formatter={(v) => `${v} min`} />
-            <Line type="monotone" dataKey="capacity" strokeWidth={3} dot={{ r: 3 }} />
+            <XAxis dataKey="time" tick={{ fill: 'currentColor' }} />
+            <YAxis domain={[0, 60]} tick={{ fill: 'currentColor' }} tickFormatter={(v) => `${v}m`} />
+            <Tooltip
+              formatter={(v) => `${v} min`}
+              contentStyle={{
+                backgroundColor: 'var(--background)',
+                border: '1px solid rgba(128, 128, 128, 0.35)',
+                borderRadius: '0.5rem',
+                color: 'var(--foreground)',
+              }}
+            />
+            <Line type="monotone" dataKey="capacity" stroke="currentColor" strokeWidth={3} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
         {data.tags.map(tag => (
-          <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+          <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-zinc-800 dark:text-zinc-300">
             {tag}
           </span>
         ))}
       </div>
 
       {/* Opening Hours */}
-      <div className="text-sm text-gray-600 mb-4 border-t pt-4">
-        <p className="font-medium text-gray-700 mb-1">Opening Hours:</p>
+      <div className="mb-4 border-t pt-4 text-sm text-gray-600 dark:border-zinc-700 dark:text-zinc-400">
+        <p className="mb-1 font-medium text-gray-700 dark:text-zinc-300">Opening Hours:</p>
         <div className="grid grid-cols-2 gap-4">
-          <p>Mon - Thu: <span className="font-medium">{data.hours.monThu}</span></p>
-          <p>Fri: <span className="font-medium">{data.hours.fri}</span></p>
+          <p>Mon - Thu: <span className="font-medium text-gray-900 dark:text-zinc-100">{data.hours.monThu}</span></p>
+          <p>Fri: <span className="font-medium text-gray-900 dark:text-zinc-100">{data.hours.fri}</span></p>
         </div>
       </div>
 
@@ -575,7 +583,7 @@ function FoodCard({
       <div className="flex justify-end">
         <button 
           onClick={handleReportStatusClick}
-          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition"
+          className="flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
           >
           ▶ Report Status
         </button>
@@ -591,7 +599,7 @@ function FoodCard({
           router.push('/signin');
         }}
       >
-        <p className="text-sm text-gray-600">Please sign in to submit a report.</p>
+        <p className="text-sm text-gray-600 dark:text-zinc-400">Please sign in to submit a report.</p>
       </Modal>
 
       <Modal
@@ -600,13 +608,13 @@ function FoodCard({
         title="Report Food Wait Time"
         onSubmit={handleReportSubmit}
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="mb-4 text-sm text-gray-600 dark:text-zinc-400">
           Let us know how long you waited.
         </p>
 
         <div className="space-y-2">
           <div className="mt-3 text-center">
-            <span className="text-sm text-black">Estimated Wait:</span>
+            <span className="text-sm text-black dark:text-zinc-200">Estimated Wait:</span>
 
             <div
               className={`text-2xl font-bold transition-colors duration-200 ${getWaitColour(
@@ -624,7 +632,7 @@ function FoodCard({
             value={waitMinutes}
             onChange={(e) => setWaitMinutes(Number(e.target.value))}
             className={`
-              w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-300
+              h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 dark:bg-zinc-600
               ${getWaitColour(waitMinutes)}
             `}
           />
@@ -721,13 +729,13 @@ export default function FoodCourtPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
       <Header />
       
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
         
         {/* Page Title */}
-        <h1 className="text-3xl font-bold text-gray-800">Campus Food</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">Campus Food</h1>
 
         {/* Selected Card (Popup/Detail View) */}
         {selectedRestaurant && (
@@ -757,27 +765,27 @@ export default function FoodCourtPage() {
           <div className="space-y-4">
             {/* Search */}
             <div>
-               <h3 className="text-sm font-bold text-gray-700 mb-2">Restaurant Search:</h3>
+               <h3 className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300">Restaurant Search:</h3>
                <div className="relative">
                  <input 
                    type="text" 
                    placeholder="Hinted search text..." 
-                   className="w-full pl-4 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-purple-500 placeholder-gray-500 text-gray-900"
+                   className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-4 pr-10 text-gray-900 placeholder-gray-500 focus:outline-purple-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:outline-purple-400"
                    value={searchQuery}
                    onChange={(e) => setSearchQuery(e.target.value)}
                  />
-                 <span className="absolute right-3 top-2.5 text-gray-400">🔍</span>
+                 <span className="absolute right-3 top-2.5 text-gray-400 dark:text-zinc-500">🔍</span>
                </div>
             </div>
 
             {/* Filters */}
             <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">Filters:</h3>
+              <h3 className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300">Filters:</h3>
               <div className="flex flex-wrap gap-2">
                 <button 
                   onClick={() => setActiveFilter(null)}
-                  className={`px-3 py-1 text-xs rounded-full border transition ${
-                    activeFilter === null ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                    activeFilter === null ? 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-purple-500'
                   }`}
                 >
                   All
@@ -786,10 +794,10 @@ export default function FoodCourtPage() {
                   <button
                     key={filter}
                     onClick={() => setActiveFilter(filter === activeFilter ? null : filter)}
-                    className={`px-3 py-1 text-xs rounded-full border transition ${
+                    className={`rounded-full border px-3 py-1 text-xs transition ${
                       activeFilter === filter 
-                        ? 'bg-purple-100 text-purple-800 border-purple-300' 
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300'
+                        ? 'border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-600 dark:bg-purple-950 dark:text-purple-200' 
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-purple-500'
                     }`}
                   >
                     {filter}
@@ -801,9 +809,9 @@ export default function FoodCourtPage() {
 
           {/* Right Column: Estimated Waiting Times List */}
           <div className="md:col-span-2">
-            <h3 className="text-lg font-bold text-gray-800 mb-3">Estimated Waiting Times:</h3>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <ul className="divide-y divide-gray-100">
+            <h3 className="mb-3 text-lg font-bold text-gray-800 dark:text-zinc-100">Estimated Waiting Times:</h3>
+            <div className="overflow-hidden rounded-xl bg-white shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
+              <ul className="divide-y divide-gray-100 dark:divide-zinc-800">
                 {filteredList.map((item) => {
                   const time = estimates[item.name] ?? item.waitTime;
                   return(
@@ -815,15 +823,15 @@ export default function FoodCourtPage() {
                           const data = await getFullDayReport(item.id);
                           setGraphData(data);
                         }}
-                        className={`w-full flex justify-between items-center px-6 py-4 hover:bg-gray-50 transition text-left ${
-                          selectedId === item.id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
+                        className={`flex w-full items-center justify-between px-6 py-4 text-left transition hover:bg-gray-50 dark:hover:bg-zinc-800 ${
+                          selectedId === item.id ? 'border-l-4 border-purple-500 bg-purple-50 dark:bg-purple-950/40' : ''
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-gray-400 text-xl">✪</span> {/* Placeholder Icon */}
+                          <span className="text-xl text-gray-400 dark:text-zinc-500">✪</span> {/* Placeholder Icon */}
                           <div>
-                            <p className="font-semibold text-gray-800">{item.name}</p>
-                            <p className="text-xs text-gray-400">{item.building}</p>
+                            <p className="font-semibold text-gray-800 dark:text-zinc-100">{item.name}</p>
+                            <p className="text-xs text-gray-400 dark:text-zinc-500">{item.building}</p>
                           </div>
                         </div>
                         
@@ -838,7 +846,7 @@ export default function FoodCourtPage() {
                 })}
                 
                 {filteredList.length === 0 && (
-                  <li className="p-6 text-center text-gray-500">
+                  <li className="p-6 text-center text-gray-500 dark:text-zinc-400">
                     No restaurants match your filters.
                   </li>
                 )}

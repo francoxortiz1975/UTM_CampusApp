@@ -3,7 +3,6 @@
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
 import Modal from '../../components/Modal';
-import { Profile } from '../../types/Authentication';
 
 interface Event {
   id: string;
@@ -54,7 +53,6 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedClub, setSelectedClub] = useState<string>('all');
   const [showPastEvents, setShowPastEvents] = useState(true);
@@ -128,24 +126,21 @@ export default function EventsPage() {
 
   const getClubColor = (club: string) => {
     const colors: { [key: string]: string } = {
-      'CS Club': 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-      'Tech Society': 'bg-purple-100 text-purple-800 hover:bg-purple-200',
-      'Math Society': 'bg-green-100 text-green-800 hover:bg-green-200',
-      'Physics Club': 'bg-red-100 text-red-800 hover:bg-red-200',
-      'Engineering Society': 'bg-orange-100 text-orange-800 hover:bg-orange-200',
+      'CS Club':
+        'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-200 dark:hover:bg-blue-900',
+      'Tech Society':
+        'bg-purple-100 text-purple-800 hover:bg-purple-200 dark:bg-purple-950 dark:text-purple-200 dark:hover:bg-purple-900',
+      'Math Society':
+        'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-950 dark:text-green-200 dark:hover:bg-green-900',
+      'Physics Club':
+        'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900',
+      'Engineering Society':
+        'bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:hover:bg-orange-900',
     };
-    return colors[club] || 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-  };
-
-  const getClubCheckboxColor = (club: string) => {
-    const colors: { [key: string]: string } = {
-      'CS Club': 'accent-blue-600',
-      'Tech Society': 'accent-purple-600',
-      'Math Society': 'accent-green-600',
-      'Physics Club': 'accent-red-600',
-      'Engineering Society': 'accent-orange-600',
-    };
-    return colors[club] || 'accent-gray-600';
+    return (
+      colors[club] ||
+      'bg-gray-100 text-gray-800 hover:bg-gray-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700'
+    );
   };
 
   const allClubs = Array.from(new Set(events.map(e => e.club))).sort();
@@ -155,14 +150,19 @@ export default function EventsPage() {
 
   const days = [];
   for (let i = 0; i < startingDayOfWeek; i++) {
-    days.push(<div key={`empty-${i}`} className="min-h-24 bg-gray-50"></div>);
+    days.push(
+      <div key={`empty-${i}`} className="min-h-24 bg-gray-50 dark:bg-zinc-900/80"></div>
+    );
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEvents = getEventsForDay(day);
     days.push(
-      <div key={day} className="min-h-24 bg-white border border-gray-200 p-2">
-        <div className="font-semibold text-gray-700 mb-1">{day}</div>
+      <div
+        key={day}
+        className="min-h-24 border border-gray-200 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
+      >
+        <div className="mb-1 font-semibold text-gray-700 dark:text-zinc-300">{day}</div>
         <div className="space-y-1">
           {dayEvents.map(event => (
             <div
@@ -180,17 +180,17 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header onOpenModal={() => setIsModalOpen(true)} profile={profile} />
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+      <Header />
 
       <div className="flex">
         {/* Left Sidebar */}
-        <aside className="w-64 bg-white shadow-md p-6 min-h-screen">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Filters</h3>
+        <aside className="min-h-screen w-64 bg-white p-6 shadow-md dark:bg-zinc-900 dark:shadow-zinc-950/50">
+          <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-zinc-100">Filters</h3>
           
           {/* Search Bar */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
               Search Events
             </label>
             <input
@@ -198,32 +198,32 @@ export default function EventsPage() {
               placeholder="Search by title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-500 text-gray-900"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-transparent focus:ring-2 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-indigo-400"
             />
           </div>
 
           {/* Show Past Events Toggle */}
           <div className="mb-6">
-            <label className="flex items-center space-x-2 cursor-pointer">
+            <label className="flex cursor-pointer items-center space-x-2">
               <input
                 type="checkbox"
                 checked={showPastEvents}
                 onChange={(e) => setShowPastEvents(e.target.checked)}
-                className="w-4 h-4 accent-indigo-600"
+                className="h-4 w-4 accent-indigo-600 dark:accent-indigo-500"
               />
-              <span className="text-sm text-gray-700">Show Past Events</span>
+              <span className="text-sm text-gray-700 dark:text-zinc-300">Show Past Events</span>
             </label>
           </div>
 
           {/* Club Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-zinc-300">
               Filter by Club
             </label>
             <select
               value={selectedClub}
               onChange={(e) => setSelectedClub(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-black text-sm text-gray-700"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-black focus:border-transparent focus:ring-2 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-200 dark:focus:ring-indigo-400"
             >
               <option value="all">All Clubs</option>
               {allClubs.map(club => (
@@ -234,38 +234,38 @@ export default function EventsPage() {
         </aside>
 
         {/* Main Calendar */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-lg bg-white p-6 shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <button
               onClick={prevMonth}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
             >
               ← Previous
             </button>
             
-            <h2 className="text-2xl font-bold text-gray-900">{monthName}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">{monthName}</h2>
             
             <button
               onClick={nextMonth}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              className="rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
             >
               Next →
             </button>
           </div>
 
           {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-0 mb-2">
+          <div className="mb-2 grid grid-cols-7 gap-0">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-semibold text-gray-600 py-2">
+              <div key={day} className="py-2 text-center font-semibold text-gray-600 dark:text-zinc-400">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-0 border-t border-l border-gray-200">
+          <div className="grid grid-cols-7 gap-0 border-l border-t border-gray-200 dark:border-zinc-700">
             {days}
           </div>
         </div>
@@ -275,23 +275,23 @@ export default function EventsPage() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div
-          className="fixed inset-0 flex items-start justify-end z-50 p-8"
+          className="fixed inset-0 z-50 flex items-start justify-end p-8"
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl w-96 overflow-hidden border-2 border-gray-200"
+            className="w-96 overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-2xl dark:border-zinc-600 dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
-              <div className="flex justify-between items-start">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white dark:from-indigo-600 dark:to-purple-600">
+              <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{selectedEvent.title}</h2>
-                  <p className="text-indigo-100">{selectedEvent.club}</p>
+                  <h2 className="mb-2 text-2xl font-bold">{selectedEvent.title}</h2>
+                  <p className="text-indigo-100 dark:text-indigo-200">{selectedEvent.club}</p>
                 </div>
                 <button
                   onClick={() => setSelectedEvent(null)}
-                  className="text-white hover:text-gray-200 text-2xl font-bold"
+                  className="text-2xl font-bold text-white hover:text-gray-200 dark:hover:text-zinc-200"
                 >
                   ×
                 </button>
@@ -299,20 +299,20 @@ export default function EventsPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-6">
               <div className="flex items-start space-x-3">
                 <span className="text-2xl">📅</span>
                 <div>
-                  <p className="font-semibold text-gray-700">Date</p>
-                  <p className="text-gray-600">{formatDate(selectedEvent.date)}</p>
+                  <p className="font-semibold text-gray-700 dark:text-zinc-300">Date</p>
+                  <p className="text-gray-600 dark:text-zinc-400">{formatDate(selectedEvent.date)}</p>
                 </div>
               </div>
 
               <div className="flex items-start space-x-3">
                 <span className="text-2xl">⏰</span>
                 <div>
-                  <p className="font-semibold text-gray-700">Time</p>
-                  <p className="text-gray-600">
+                  <p className="font-semibold text-gray-700 dark:text-zinc-300">Time</p>
+                  <p className="text-gray-600 dark:text-zinc-400">
                     {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}
                   </p>
                 </div>
@@ -322,8 +322,8 @@ export default function EventsPage() {
                 <div className="flex items-start space-x-3">
                   <span className="text-2xl">📍</span>
                   <div>
-                    <p className="font-semibold text-gray-700">Location</p>
-                    <p className="text-gray-600">{selectedEvent.location}</p>
+                    <p className="font-semibold text-gray-700 dark:text-zinc-300">Location</p>
+                    <p className="text-gray-600 dark:text-zinc-400">{selectedEvent.location}</p>
                   </div>
                 </div>
               )}
@@ -332,18 +332,18 @@ export default function EventsPage() {
                 <div className="flex items-start space-x-3">
                   <span className="text-2xl">📝</span>
                   <div>
-                    <p className="font-semibold text-gray-700">Description</p>
-                    <p className="text-gray-600">{selectedEvent.description}</p>
+                    <p className="font-semibold text-gray-700 dark:text-zinc-300">Description</p>
+                    <p className="text-gray-600 dark:text-zinc-400">{selectedEvent.description}</p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end">
+            <div className="flex justify-end bg-gray-50 px-6 py-4 dark:bg-zinc-800">
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="rounded-lg bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
               >
                 Close
               </button>
@@ -352,7 +352,9 @@ export default function EventsPage() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        {null}
+      </Modal>
     </div>
   );
 }
