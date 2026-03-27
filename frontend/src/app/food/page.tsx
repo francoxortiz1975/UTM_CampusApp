@@ -416,6 +416,24 @@ const RESTAURANTS: Restaurant[] = [
     hours: { monThu: '8am-4pm', fri: '8am-2pm' },
     imagePlaceholderColor: 'bg-orange-200'
   },
+  {
+    id: '44',
+    name: 'The Blind Duck Pub',
+    building: 'Student Centre (SC)',
+    waitTime: 6,
+    tags: ['Pub', 'Burgers', 'Late Night'],
+    hours: { monThu: '11am - 10pm', fri: '11am - 11pm' },
+    imagePlaceholderColor: 'bg-amber-200'
+  },
+  {
+    id: '45',
+    name: 'Chatime',
+    building: 'Student Centre (SC)',
+    waitTime: 4,
+    tags: ['Bubble Tea', 'Drinks', 'Snacks'],
+    hours: { monThu: '11am - 8pm', fri: '11am - 7pm' },
+    imagePlaceholderColor: 'bg-pink-200'
+  },
 ];
 
 // --- Helpers ---
