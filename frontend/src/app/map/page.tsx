@@ -1,143 +1,196 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { Compass, MapPinned, Navigation } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Compass, LoaderCircle, MapPinned, Navigation } from 'lucide-react';
 import Header from '../../components/Header';
+import {
+    buildFallbackStatus,
+    loadAllBuildingStatuses,
+    type MapBuildingStatus,
+    type MapResourceSnapshot,
+} from './mapAvailability';
+import { MAP_BUILDINGS, MAP_EMBED_SRC } from './mapData';
 
-type Building = {
-    id: string;
-    label: string;
-    name: string;
-    description: string;
-    contents: string[];
-    links: { label: string; href: string }[];
-    position: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    };
-    accent: string;
+type Tone = MapBuildingStatus['tone'];
+
+const overlayToneClasses: Record<Tone, string> = {
+    green:
+        'border-emerald-50/90 bg-emerald-400/70 text-emerald-950 shadow-emerald-950/20 hover:bg-emerald-300/75',
+    yellow:
+        'border-amber-50/90 bg-amber-300/75 text-amber-950 shadow-amber-950/20 hover:bg-amber-200/80',
+    red:
+        'border-rose-50/90 bg-rose-400/75 text-rose-950 shadow-rose-950/20 hover:bg-rose-300/80',
 };
 
-const buildings: Building[] = [
-    {
-        id: 'ib',
-        label: 'IB',
-        name: 'Instructional Building',
-        description:
-            'A central academic building with study space and food options that students pass through throughout the day.',
-        contents: ['Harvey’s', 'Second Cup Café', 'Classrooms', 'Study seating'],
-        links: [
-            { label: 'Open Food', href: '/food' },
-            { label: 'Open Events', href: '/events' },
-        ],
-        position: { left: 12, top: 20, width: 18, height: 14 },
-        accent: 'bg-amber-200 text-amber-950 ring-amber-300',
-    },
-    {
-        id: 'dv',
-        label: 'DV',
-        name: 'Deerfield Hall',
-        description:
-            'A busy lecture and student traffic building that is useful as a navigation anchor for nearby food and study areas.',
-        contents: ['Subway', 'Lecture rooms', 'Student services', 'Study nooks'],
-        links: [
-            { label: 'Open Food', href: '/food' },
-            { label: 'Open Parking', href: '/parking' },
-        ],
-        position: { left: 38, top: 16, width: 16, height: 12 },
-        accent: 'bg-blue-200 text-blue-950 ring-blue-300',
-    },
-    {
-        id: 'dh',
-        label: 'DH',
-        name: 'Davis Building',
-        description:
-            'A major classroom building that helps connect the academic side of campus with student amenities.',
-        contents: ['Starbucks', 'Classrooms', 'Labs', 'Meeting space'],
-        links: [
-            { label: 'Open Food', href: '/food' },
-            { label: 'Open Events', href: '/events' },
-        ],
-        position: { left: 60, top: 28, width: 18, height: 13 },
-        accent: 'bg-emerald-200 text-emerald-950 ring-emerald-300',
-    },
-    {
-        id: 'kn',
-        label: 'KN',
-        name: 'Kaneff Centre',
-        description:
-            'A recognizable hub near food and common student traffic, useful for quickly orienting users on the map.',
-        contents: ['Starbucks', 'Subway', 'Campus walkways', 'Student gathering space'],
-        links: [
-            { label: 'Open Food', href: '/food' },
-            { label: 'Open Parking', href: '/parking' },
-        ],
-        position: { left: 24, top: 52, width: 18, height: 14 },
-        accent: 'bg-violet-200 text-violet-950 ring-violet-300',
-    },
-    {
-        id: 'rawc',
-        label: 'RAWC',
-        name: 'Recreation, Athletics and Wellness Centre',
-        description:
-            'The main athletics destination on campus, making it a natural anchor for capacity and activity exploration.',
-        contents: ['Gym', 'Fitness areas', 'Courts', 'Locker rooms'],
-        links: [
-            { label: 'Open Gym', href: '/gym' },
-            { label: 'Open Parking', href: '/parking' },
-        ],
-        position: { left: 58, top: 56, width: 22, height: 16 },
-        accent: 'bg-rose-200 text-rose-950 ring-rose-300',
-    },
-];
+const pillToneClasses: Record<Tone, string> = {
+    green:
+        'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200',
+    yellow:
+        'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200',
+    red:
+        'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200',
+};
+
+function toneFromScore(score: number): Tone {
+    if (score <= 34) return 'green';
+    if (score <= 64) return 'yellow';
+    return 'red';
+}
+
+function ResourceSection({
+    title,
+    items,
+}: {
+    title: string;
+    items: MapResourceSnapshot[];
+}) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/80">
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{title}</p>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    {items.length} tracked
+                </span>
+            </div>
+
+            <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+                {items.map((item) => {
+                    const tone = toneFromScore(item.score);
+                    return (
+                        <div
+                            key={`${item.kind}-${item.id}`}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+                        >
+                            <span className="min-w-0 text-sm text-gray-700 dark:text-zinc-200">
+                                {item.name}
+                            </span>
+                            <span
+                                className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${pillToneClasses[tone]}`}
+                            >
+                                {item.displayValue}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 
 export default function MapPage() {
-    const [selectedId, setSelectedId] = useState<string>(buildings[0].id);
+    const [selectedId, setSelectedId] = useState<string>(MAP_BUILDINGS[0].id);
+    const [statuses, setStatuses] = useState<Record<string, MapBuildingStatus>>(() =>
+        Object.fromEntries(
+            MAP_BUILDINGS.map((building) => [building.id, buildFallbackStatus(building)])
+        )
+    );
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        async function refreshStatuses() {
+            setIsRefreshing(true);
+            const nextStatuses = await loadAllBuildingStatuses(MAP_BUILDINGS);
+            if (isMounted) {
+                setStatuses(nextStatuses);
+                setIsRefreshing(false);
+            }
+        }
+
+        refreshStatuses();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const selectedBuilding = useMemo(
-        () => buildings.find((building) => building.id === selectedId) ?? buildings[0],
+        () => MAP_BUILDINGS.find((building) => building.id === selectedId) ?? MAP_BUILDINGS[0],
         [selectedId]
     );
 
+    const selectedStatus =
+        statuses[selectedBuilding.id] ?? buildFallbackStatus(selectedBuilding);
+
+    const selectedResourceCount =
+        selectedStatus.resources.food.length +
+        selectedStatus.resources.gym.length +
+        selectedStatus.resources.parking.length;
+
+    const sections = [
+        { title: 'Food venues', items: selectedStatus.resources.food },
+        { title: 'Gym facilities', items: selectedStatus.resources.gym },
+        { title: 'Parking', items: selectedStatus.resources.parking },
+    ].filter((section) => section.items.length > 0);
+
     return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ea,transparent_35%),radial-gradient(circle_at_bottom_right,#dbeafe,transparent_30%),linear-gradient(to_bottom,#f8fafc,#eef2ff)] dark:bg-[radial-gradient(circle_at_top,#2a2114,transparent_35%),radial-gradient(circle_at_bottom_right,#172554,transparent_30%),linear-gradient(to_bottom,#09090b,#18181b)]">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ea,transparent_30%),radial-gradient(circle_at_bottom_right,#dbeafe,transparent_26%),linear-gradient(to_bottom,#f8fafc,#eef2ff)] dark:bg-[radial-gradient(circle_at_top,#261d11,transparent_30%),radial-gradient(circle_at_bottom_right,#172554,transparent_25%),linear-gradient(to_bottom,#09090b,#18181b)]">
             <Header />
 
             <main className="mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-                <section className="grid gap-6 lg:grid-cols-[1.45fr_0.95fr]">
-                    <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/80 p-6 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/80 dark:shadow-black/30">
+                <section className="grid gap-6 lg:grid-cols-[1.35fr_0.95fr]">
+                    <div className="overflow-hidden rounded-[30px] border border-white/70 bg-white/80 p-6 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/80 dark:shadow-black/30">
                         <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div>
+                            <div className="max-w-3xl">
                                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-rose-600 dark:text-rose-300">
-                                    SCRUM-53 scaffold
+                                    Interactive campus map
                                 </p>
                                 <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 dark:text-zinc-50">
-                                    Interactive campus map
+                                    UTM busyness at the building level
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-zinc-300">
-                                    This first pass gives us a clickable 2D campus view with
-                                    key buildings, quick context, and direct links into the
-                                    existing dashboard pages.
+                                <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-zinc-300">
+                                    The aerial view below uses our own overlays and current
+                                    dashboard estimates to show which tracked buildings look
+                                    quiet, moderate, or busy right now.
                                 </p>
                             </div>
 
                             <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
-                                <Compass className="size-4" />
-                                Click a building to inspect it
+                                {isRefreshing ? (
+                                    <LoaderCircle className="size-4 animate-spin" />
+                                ) : (
+                                    <Compass className="size-4" />
+                                )}
+                                {isRefreshing ? 'Refreshing live estimates' : 'Click a building to inspect it'}
                             </div>
                         </div>
 
-                        <div className="mt-6 rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#f4f1ea_0%,#efeadd_100%)] p-4 dark:border-zinc-700 dark:bg-[linear-gradient(180deg,#27272a_0%,#18181b_100%)]">
-                            <div className="relative min-h-[440px] overflow-hidden rounded-[20px] border border-white/80 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.9),transparent_18%),linear-gradient(135deg,#cbd5e1_0%,#e2e8f0_40%,#bfdbfe_100%)] shadow-inner dark:border-zinc-600 dark:bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.06),transparent_18%),linear-gradient(135deg,#1f2937_0%,#111827_45%,#172554_100%)]">
-                                <div className="absolute inset-x-[7%] top-[9%] h-[12%] rounded-full border border-white/50 bg-white/20 dark:border-zinc-500/60 dark:bg-white/5" />
-                                <div className="absolute inset-x-[10%] top-[39%] h-[7%] rounded-full border border-white/40 bg-white/15 dark:border-zinc-500/50 dark:bg-white/5" />
-                                <div className="absolute left-[45%] top-[8%] h-[78%] w-[8%] rounded-full border border-white/40 bg-white/20 dark:border-zinc-500/50 dark:bg-white/5" />
-                                <div className="absolute left-[12%] top-[74%] h-[10%] w-[76%] rounded-full border border-white/40 bg-white/15 dark:border-zinc-500/50 dark:bg-white/5" />
+                        <div className="mt-6 rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#f3efe5_0%,#ece6d5_100%)] p-4 dark:border-zinc-700 dark:bg-[linear-gradient(180deg,#27272a_0%,#18181b_100%)]">
+                            <div className="relative min-h-[560px] overflow-hidden rounded-[22px] border border-white/80 shadow-inner dark:border-zinc-700">
+                                <iframe
+                                    title="University of Toronto Mississauga satellite map"
+                                    src={MAP_EMBED_SRC}
+                                    loading="lazy"
+                                    className="pointer-events-none absolute inset-0 h-full w-full border-0 saturate-[1.12] contrast-110"
+                                />
+                                <div className="absolute inset-0 bg-slate-950/14 dark:bg-black/36" />
 
-                                {buildings.map((building) => {
+                                <div className="absolute left-4 top-4 z-20 flex flex-wrap gap-2">
+                                    {[
+                                        ['Quiet', 'green'],
+                                        ['Moderate', 'yellow'],
+                                        ['Busy', 'red'],
+                                    ].map(([label, tone]) => (
+                                        <span
+                                            key={label}
+                                            className={`rounded-full border px-3 py-1 text-xs font-semibold ${pillToneClasses[tone as Tone]}`}
+                                        >
+                                            {label}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <div className="absolute right-4 top-4 z-20 max-w-xs rounded-2xl border border-white/80 bg-white/88 px-4 py-3 text-xs leading-5 text-slate-700 shadow-lg backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/88 dark:text-zinc-200">
+                                    The Google satellite view is used as a fixed visual
+                                    reference. Our overlays provide the interaction and the
+                                    building colors are computed from current tracked services.
+                                </div>
+
+                                {MAP_BUILDINGS.map((building) => {
+                                    const status =
+                                        statuses[building.id] ?? buildFallbackStatus(building);
                                     const isSelected = building.id === selectedBuilding.id;
 
                                     return (
@@ -145,36 +198,51 @@ export default function MapPage() {
                                             key={building.id}
                                             type="button"
                                             onClick={() => setSelectedId(building.id)}
-                                            className={`absolute rounded-2xl border px-3 py-2 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900 ${
+                                            className={`absolute z-10 overflow-hidden border text-left shadow-xl transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-950 ${overlayToneClasses[status.tone]} ${
                                                 isSelected
-                                                    ? 'border-gray-900 ring-2 ring-gray-900/20 dark:border-white dark:ring-white/20'
-                                                    : 'border-transparent'
-                                            } ${building.accent}`}
+                                                    ? 'ring-2 ring-white/95 dark:ring-zinc-100'
+                                                    : ''
+                                            }`}
                                             style={{
                                                 left: `${building.position.left}%`,
                                                 top: `${building.position.top}%`,
                                                 width: `${building.position.width}%`,
                                                 height: `${building.position.height}%`,
+                                                clipPath: building.position.clipPath,
                                             }}
                                         >
-                                            <span className="block text-xs font-semibold uppercase tracking-[0.2em] opacity-70">
-                                                Building
-                                            </span>
-                                            <span className="mt-1 block text-lg font-bold">
-                                                {building.label}
-                                            </span>
+                                            <div className="flex h-full flex-col justify-between p-3 backdrop-blur-[1px]">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <span className="text-xl font-black tracking-[0.18em]">
+                                                        {building.label}
+                                                    </span>
+                                                    <span className="rounded-full bg-white/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-900">
+                                                        {status.label}
+                                                    </span>
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-80">
+                                                        Avg busyness
+                                                    </p>
+                                                    <p className="text-lg font-bold">
+                                                        {Math.round(status.score)}%
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </button>
                                     );
                                 })}
 
-                                <div className="absolute bottom-4 left-4 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-xs font-medium text-slate-700 shadow-sm backdrop-blur dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-200">
-                                    Prototype campus layout for Sprint 3 exploration
+                                <div className="absolute bottom-4 left-4 z-20 rounded-full border border-white/80 bg-white/88 px-4 py-2 text-xs font-medium text-slate-700 shadow-sm backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/88 dark:text-zinc-200">
+                                    UTM satellite reference • overlays are fixed for demo
+                                    stability
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <aside className="flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/85 p-6 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/85 dark:shadow-black/30">
+                    <aside className="flex flex-col gap-4 rounded-[30px] border border-white/70 bg-white/85 p-6 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/85 dark:shadow-black/30">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-400">
@@ -189,50 +257,59 @@ export default function MapPage() {
                             </div>
                         </div>
 
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span
+                                className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${pillToneClasses[selectedStatus.tone]}`}
+                            >
+                                {selectedStatus.label}
+                            </span>
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                                {Math.round(selectedStatus.score)}% avg busyness
+                            </span>
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+                                {selectedResourceCount} tracked resources
+                            </span>
+                        </div>
+
                         <p className="text-sm leading-6 text-gray-600 dark:text-zinc-300">
                             {selectedBuilding.description}
                         </p>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/80">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                Contents and services
-                            </p>
-                            <ul className="mt-3 space-y-2 text-sm text-gray-600 dark:text-zinc-300">
-                                {selectedBuilding.contents.map((item) => (
-                                    <li key={item} className="flex items-start gap-2">
-                                        <span className="mt-1 size-2 rounded-full bg-rose-500" />
-                                        <span>{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        {sections.map((section) => (
+                            <ResourceSection
+                                key={section.title}
+                                title={section.title}
+                                items={section.items}
+                            />
+                        ))}
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/80">
                             <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                Quick links
+                                Open detailed views
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                                 {selectedBuilding.links.map((link) => (
                                     <Link
-                                        key={link.href + link.label}
+                                        key={`${selectedBuilding.id}-${link.href}`}
                                         href={link.href}
-                                        className="inline-flex items-center rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+                                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
                                     >
                                         {link.label}
+                                        <ArrowRight className="size-4" />
                                     </Link>
                                 ))}
                             </div>
                         </div>
 
                         <div className="rounded-2xl border border-dashed border-slate-300 p-4 dark:border-zinc-700">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                                Next sprint-friendly extensions
-                            </p>
-                            <ul className="mt-3 space-y-2 text-sm text-gray-600 dark:text-zinc-300">
-                                <li>Search for buildings directly from the map.</li>
-                                <li>Hook buildings into live backend availability data.</li>
-                                <li>Add zoom and pan once the layout is finalized.</li>
-                            </ul>
+                            <div className="flex items-start gap-2">
+                                <Navigation className="mt-0.5 size-4 shrink-0 text-slate-500 dark:text-zinc-400" />
+                                <p className="text-sm leading-6 text-gray-600 dark:text-zinc-300">
+                                    If live backend values are unavailable, this map falls back
+                                    to the current hardcoded estimates from the existing pages
+                                    so the demo stays stable.
+                                </p>
+                            </div>
                         </div>
                     </aside>
                 </section>
@@ -240,39 +317,32 @@ export default function MapPage() {
                 <section className="grid gap-4 rounded-[28px] border border-white/70 bg-white/75 p-5 shadow-lg shadow-slate-200/50 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/80 dark:shadow-black/20 md:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
                         <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                            Why this placeholder is useful
+                            Food buildings
                         </p>
                         <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
-                            It gives the team a visible map route, a stable building data
-                            shape, and a UI surface to iterate on without waiting on backend
-                            dependencies.
+                            Wait times are converted into a busy score, so long food lines push
+                            a building toward yellow or red.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
                         <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                            Building labels included
+                            RAWC
                         </p>
                         <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
-                            IB, DV, DH, KN, and RAWC are all clickable so the story already
-                            demonstrates the intended interaction model.
+                            Gym spaces already expose capacity estimates, so the map can use
+                            those percentages directly.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
                         <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                            Existing feature integration
+                            CCT
                         </p>
                         <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
-                            Each selected building points users back into food, gym, parking,
-                            or events so this feature already fits the rest of the dashboard.
+                            The CCT building combines one tracked cafe with CCT Garage, making
+                            it a useful mixed resource example for the presentation.
                         </p>
                     </div>
                 </section>
-
-                <div className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-300">
-                    <Navigation className="size-4" />
-                    This is a frontend scaffold only. Backend integration and richer campus
-                    data can be layered on later this week.
-                </div>
             </main>
         </div>
     );
