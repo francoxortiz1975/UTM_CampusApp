@@ -1,6 +1,7 @@
 # app/routes/auth.py
 from flask import Blueprint, request
 from ..components.authenticator import Authenticator
+from ..components.statusreport import StatusCode, StatusReport
 
 ## NOTE (HALF): Blueprint is just used to modularize the routes (eg it becomes /auth/signup)
 auth_bp = Blueprint("auth", __name__)

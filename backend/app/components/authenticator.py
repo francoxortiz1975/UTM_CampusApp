@@ -32,10 +32,17 @@ class Authenticator():
     
     def profile():
         user_id = session.get("user_id")
-        user = User.query.get(user_id)
-
-        if not user:
+        if not user_id:
             return StatusReport("Not logged in", StatusCode.UNAUTHORIZED)
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return StatusReport("Invalid user id in session", StatusCode.UNAUTHORIZED)
+
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return StatusReport("User does not exist", StatusCode.UNAUTHORIZED)
 
         return StatusReport({"id": user.id, "email": user.email}, StatusCode.OK)
 
