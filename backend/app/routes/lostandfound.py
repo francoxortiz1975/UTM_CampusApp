@@ -1,5 +1,5 @@
 from flask import Blueprint, request, session
-from ..components.lostandfound import LostAndFound
+from ..components.lostandfound import LostAndFound, Comments
 from ..components.statusreport import StatusCode, StatusReport
 
 lostandfound_bp = Blueprint("lostandfound", __name__)
@@ -42,7 +42,10 @@ def create_item():
 @lostandfound_bp.route("/", methods=["GET"])
 def get_all():
     entries = LostAndFound.get_all()
-    all_entries = [entry.to_dict() for entry in entries]
+    if entries:
+        all_entries = [entry.to_dict() for entry in entries]
+    else:
+        all_entries = []
 
     status = StatusReport(all_entries, StatusCode.OK)
     return status.json(), status.code()
@@ -99,4 +102,39 @@ def update_post():
         return status.json(), status.code()
     
     status = StatusReport(update.to_dict(), StatusCode.OK)
+    return status.json(), status.code()
+
+@lostandfound_bp.route("/<int:post_id>/comment", methods=["POST"], strict_slashes=False)
+def new_comment(post_id):
+    data = request.json or {}
+    
+    user_id = session.get("user_id")
+    comment = data.get("comment")
+    
+    if not user_id:
+        status = StatusReport(
+            "You must be logged in to submit a lost item",
+            StatusCode.UNAUTHORIZED
+        )
+        return status.json(), status.code()
+
+    if not comment:
+        status = StatusReport("No comment provided", StatusCode.BAD_REQUEST)
+        return status.json(), status.code()
+    
+    n_comment = Comments(user_id=user_id, post_id=post_id, comment=comment)
+    n_comment.save()
+
+    status = StatusReport(n_comment.to_dict(), StatusCode.CREATED)
+    return status.json(), status.code()
+
+@lostandfound_bp.route("/<int:post_id>/comments", methods=["GET"])
+def get_comments(post_id):
+    comments = Comments.get_all_by_post_id(post_id)
+    if comments:
+        all_entries = [entry.to_dict() for entry in comments]
+    else:
+        all_entries = []
+
+    status = StatusReport(all_entries, StatusCode.OK)
     return status.json(), status.code()

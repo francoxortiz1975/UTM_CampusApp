@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarDays, Car, Dumbbell, Map, Utensils } from 'lucide-react';
+import { CalendarDays, Car, Dumbbell, Map, Utensils, PackageOpen } from 'lucide-react';
 import Header from '../components/Header';
 
 const apps = [
@@ -42,6 +42,14 @@ const apps = [
         icon: Map,
         accent:
             'bg-rose-100 text-rose-800 ring-rose-200/80 dark:bg-rose-950/60 dark:text-rose-200 dark:ring-rose-800/50',
+    },
+    {
+        name: 'Lost And Found',
+        description: 'See what others have lost/found on campus',
+        href: '/lostandfound',
+        icon: PackageOpen,
+        accent:
+            'bg-amber-100 text-amber-800 ring-amber-200/80 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-800/50',
     },
 ] as const;
 

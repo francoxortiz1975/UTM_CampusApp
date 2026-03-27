@@ -20,3 +20,4 @@ class User(sqlalchemy.Model):
     def save(self):
         self.add()
         self.commit()
+
