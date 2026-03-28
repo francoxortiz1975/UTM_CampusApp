@@ -29,10 +29,12 @@ import {
   estimateDistanceToCampusKm,
   formatDateKey,
   formatHumanDate,
+  formatPlannerTime,
   getAvailableDateKeys,
   getEventsForDate,
   parseIcsCalendar,
   type PlannerCalendarEvent,
+  type PlannerMealType,
   type PlannerPreferences,
   type PlannerTimelineItem,
 } from './plannerUtils';
@@ -41,10 +43,184 @@ const initialPreferences: PlannerPreferences = {
   alreadyOnCampus: false,
   transportMode: 'drive',
   arrivalMinutes: 30,
-  wantsFood: true,
+  meals: ['lunch'],
   wantsGym: false,
   wantsEvents: true,
 };
+
+const mealOptions: Array<{ key: PlannerMealType; label: string }> = [
+  { key: 'breakfast', label: 'Breakfast' },
+  { key: 'lunch', label: 'Lunch' },
+  { key: 'snack', label: 'Snack' },
+  { key: 'dinner', label: 'Dinner' },
+];
+
+type PlannerFlexibleSlot = {
+  id: string;
+  label: string;
+  prevClass: PlannerTimelineItem | null;
+  nextClass: PlannerTimelineItem | null;
+  items: PlannerTimelineItem[];
+};
+
+function plannerDayTime(dateKey: string, hour: number, minute = 0) {
+  return new Date(`${dateKey}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
+}
+
+function scheduleSlotItems(slot: PlannerFlexibleSlot, dateKey: string) {
+  if (slot.items.length === 0) return [];
+
+  const gapMinutes = 10;
+  const totalMinutes =
+    slot.items.reduce((sum, item) => sum + item.durationMinutes, 0) +
+    gapMinutes * Math.max(slot.items.length - 1, 0);
+
+  const dayStart = plannerDayTime(dateKey, 8, 0);
+  let cursor = dayStart;
+
+  if (slot.prevClass && slot.nextClass) {
+    cursor = new Date(slot.prevClass.endAt ?? slot.prevClass.startAt ?? dayStart);
+    cursor = new Date(cursor.getTime() + gapMinutes * 60_000);
+  } else if (!slot.prevClass && slot.nextClass) {
+    const latestEnd = new Date(slot.nextClass.startAt ?? plannerDayTime(dateKey, 9, 0));
+    latestEnd.setMinutes(latestEnd.getMinutes() - gapMinutes);
+    const candidateStart = new Date(latestEnd.getTime() - totalMinutes * 60_000);
+    cursor = candidateStart > dayStart ? candidateStart : dayStart;
+  } else if (slot.prevClass && !slot.nextClass) {
+    const base = new Date(slot.prevClass.endAt ?? slot.prevClass.startAt ?? dayStart);
+    cursor = new Date(base.getTime() + 15 * 60_000);
+  } else {
+    cursor = slot.items[0].startAt ?? plannerDayTime(dateKey, 9, 0);
+  }
+
+  return slot.items.map((item) => {
+    const startAt = new Date(cursor);
+    const endAt = new Date(startAt.getTime() + item.durationMinutes * 60_000);
+    cursor = new Date(endAt.getTime() + gapMinutes * 60_000);
+
+    return {
+      ...item,
+      startAt,
+      endAt,
+      time: formatPlannerTime(startAt),
+    };
+  });
+}
+
+function buildFlexibleSlots(timeline: PlannerTimelineItem[]) {
+  const classItems = timeline.filter((item) => item.kind === 'class');
+  const flexibleItems = timeline.filter((item) => item.kind !== 'class');
+
+  if (classItems.length === 0) {
+    return [
+      {
+        id: 'open-day',
+        label: 'Flexible plan',
+        prevClass: null,
+        nextClass: null,
+        items: flexibleItems,
+      },
+    ];
+  }
+
+  const slots: PlannerFlexibleSlot[] = [
+    {
+      id: 'before-first',
+      label: 'Before classes',
+      prevClass: null,
+      nextClass: classItems[0],
+      items: [],
+    },
+  ];
+
+  for (let index = 0; index < classItems.length - 1; index += 1) {
+    slots.push({
+      id: `between-${index}`,
+      label: 'Between classes',
+      prevClass: classItems[index],
+      nextClass: classItems[index + 1],
+      items: [],
+    });
+  }
+
+  slots.push({
+    id: 'after-last',
+    label: 'After classes',
+    prevClass: classItems[classItems.length - 1],
+    nextClass: null,
+    items: [],
+  });
+
+  flexibleItems.forEach((item) => {
+    const itemTime = item.startAt?.getTime() ?? 0;
+    const firstClassStart = classItems[0].startAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const lastClassStart = classItems[classItems.length - 1].startAt?.getTime() ?? 0;
+
+    if (itemTime < firstClassStart) {
+      slots[0].items.push(item);
+      return;
+    }
+
+    if (itemTime >= lastClassStart) {
+      slots[slots.length - 1].items.push(item);
+      return;
+    }
+
+    for (let index = 0; index < classItems.length - 1; index += 1) {
+      const nextStart = classItems[index + 1].startAt?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      if (itemTime < nextStart) {
+        slots[index + 1].items.push(item);
+        return;
+      }
+    }
+
+    slots[slots.length - 1].items.push(item);
+  });
+
+  return slots;
+}
+
+function updateSlotDuration(
+  slots: PlannerFlexibleSlot[],
+  itemId: string,
+  durationMinutes: number
+) {
+  return slots.map((slot) => ({
+    ...slot,
+    items: slot.items.map((item) =>
+      item.id === itemId
+        ? { ...item, durationMinutes: Math.max(10, durationMinutes) }
+        : item
+    ),
+  }));
+}
+
+function moveItemBetweenSlots(
+  slots: PlannerFlexibleSlot[],
+  fromSlotId: string,
+  itemId: string,
+  toSlotId: string,
+  targetIndex: number
+) {
+  const sourceSlot = slots.find((slot) => slot.id === fromSlotId);
+  const draggedItem = sourceSlot?.items.find((item) => item.id === itemId);
+  if (!draggedItem) return slots;
+
+  const removed = slots.map((slot) =>
+    slot.id === fromSlotId
+      ? { ...slot, items: slot.items.filter((item) => item.id !== itemId) }
+      : slot
+  );
+
+  return removed.map((slot) => {
+    if (slot.id !== toSlotId) return slot;
+
+    const nextItems = [...slot.items];
+    const safeIndex = Math.max(0, Math.min(targetIndex, nextItems.length));
+    nextItems.splice(safeIndex, 0, draggedItem);
+    return { ...slot, items: nextItems };
+  });
+}
 
 const kindStyles: Record<
   PlannerTimelineItem['kind'],
@@ -110,6 +286,8 @@ export default function PlannerPage() {
   );
   const [isLocating, setIsLocating] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [flexibleSlots, setFlexibleSlots] = useState<PlannerFlexibleSlot[]>([]);
+  const [draggedItem, setDraggedItem] = useState<{ itemId: string; fromSlotId: string } | null>(null);
 
   const hasCalendar = calendarSource !== 'empty' && calendarEvents.length > 0;
 
@@ -223,6 +401,20 @@ export default function PlannerPage() {
     [classesForSelectedDate, preferences, statuses, selectedDate, locationDistanceKm, hasCalendar]
   );
 
+  const classTimelineItems = useMemo(
+    () => plannerResult?.timeline.filter((item) => item.kind === 'class') ?? [],
+    [plannerResult]
+  );
+
+  useEffect(() => {
+    if (!plannerResult) {
+      setFlexibleSlots([]);
+      return;
+    }
+
+    setFlexibleSlots(buildFlexibleSlots(plannerResult.timeline));
+  }, [plannerResult]);
+
   async function handleCalendarUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -299,6 +491,119 @@ export default function PlannerPage() {
     () => MOCK_EVENTS.find((event) => event.date === selectedDate) ?? null,
     [selectedDate]
   );
+
+  const scheduledSlots = useMemo(
+    () => flexibleSlots.map((slot) => ({ ...slot, items: scheduleSlotItems(slot, selectedDate) })),
+    [flexibleSlots, selectedDate]
+  );
+
+  function toggleMeal(meal: PlannerMealType) {
+    setPreferences((prev) => ({
+      ...prev,
+      meals: prev.meals.includes(meal)
+        ? prev.meals.filter((entry) => entry !== meal)
+        : [...prev.meals, meal],
+    }));
+  }
+
+  function handleDropToSlot(toSlotId: string, targetIndex: number) {
+    if (!draggedItem) return;
+
+    setFlexibleSlots((prev) =>
+      moveItemBetweenSlots(prev, draggedItem.fromSlotId, draggedItem.itemId, toSlotId, targetIndex)
+    );
+    setDraggedItem(null);
+  }
+
+  function handleDurationChange(itemId: string, durationMinutes: number) {
+    setFlexibleSlots((prev) => updateSlotDuration(prev, itemId, durationMinutes));
+  }
+
+  function renderTimelineCard(
+    item: PlannerTimelineItem,
+    options?: {
+      draggable?: boolean;
+      slotId?: string;
+      onDropIndex?: number;
+      showEditControls?: boolean;
+      locked?: boolean;
+    }
+  ) {
+    const style = kindStyles[item.kind];
+    const Icon = style.icon;
+    const blockHeight = Math.max(60, Math.round(item.durationMinutes * 1.6));
+    const isPast = item.endAt !== null && item.endAt.getTime() <= currentTime.getTime();
+
+    return (
+      <div
+        key={item.id}
+        draggable={options?.draggable}
+        onDragStart={() => {
+          if (!options?.draggable || !options.slotId) return;
+          setDraggedItem({ itemId: item.id, fromSlotId: options.slotId });
+        }}
+        onDragEnd={() => setDraggedItem(null)}
+        onDragOver={(event) => {
+          if (!options?.slotId || !draggedItem) return;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onDrop={(event) => {
+          if (!options?.slotId) return;
+          event.preventDefault();
+          event.stopPropagation();
+          handleDropToSlot(options.slotId, options.onDropIndex ?? 0);
+        }}
+        className={`rounded-2xl border p-4 ${style.border} ${options?.draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        style={{ minHeight: `${blockHeight}px` }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className={`rounded-2xl bg-white/85 p-3 dark:bg-zinc-900/80 ${isPast ? 'opacity-60' : ''}`}>
+              <Icon className={`size-5 ${style.badge}`} />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className={`text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
+                  {item.time}
+                </p>
+                {options?.locked && (
+                  <span className="rounded-full border border-slate-300 bg-white/80 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    Locked
+                  </span>
+                )}
+                {options?.draggable && (
+                  <span className="rounded-full border border-slate-300 bg-white/80 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                    Drag to reorder
+                  </span>
+                )}
+              </div>
+              <h3 className={`mt-1 text-lg font-semibold text-gray-900 dark:text-zinc-100 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
+                {item.title}
+              </h3>
+              <p className={`mt-2 text-sm leading-6 text-slate-700 dark:text-zinc-200 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
+                {item.detail}
+              </p>
+            </div>
+          </div>
+
+          {options?.showEditControls && (
+            <label className="w-full max-w-[170px] text-sm font-medium text-slate-700 dark:text-zinc-200">
+              Duration (minutes)
+              <input
+                type="number"
+                min={10}
+                step={5}
+                value={item.durationMinutes}
+                onChange={(event) => handleDurationChange(item.id, Number(event.target.value) || 10)}
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-blue-950"
+              />
+            </label>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-blue-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-slate-950">
@@ -393,17 +698,6 @@ export default function PlannerPage() {
                   <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-zinc-700 dark:bg-zinc-900">
                     <input
                       type="checkbox"
-                      checked={preferences.wantsFood}
-                      onChange={(event) =>
-                        setPreferences((prev) => ({ ...prev, wantsFood: event.target.checked }))
-                      }
-                      className="size-4 rounded accent-orange-600"
-                    />
-                    <span className="text-sm text-slate-700 dark:text-zinc-200">I want food on campus</span>
-                  </label>
-                  <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-zinc-700 dark:bg-zinc-900">
-                    <input
-                      type="checkbox"
                       checked={preferences.wantsGym}
                       onChange={(event) =>
                         setPreferences((prev) => ({ ...prev, wantsGym: event.target.checked }))
@@ -423,6 +717,34 @@ export default function PlannerPage() {
                     />
                     <span className="text-sm text-slate-700 dark:text-zinc-200">Show me events after class</span>
                   </label>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-zinc-300">
+                    Food plans for today
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-2">
+                    {mealOptions.map((meal) => {
+                      const selected = preferences.meals.includes(meal.key);
+                      return (
+                        <button
+                          key={meal.key}
+                          type="button"
+                          onClick={() => toggleMeal(meal.key)}
+                          className={`rounded-xl border px-3 py-3 text-sm font-medium transition ${
+                            selected
+                              ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-200'
+                              : 'border-slate-200 bg-white text-slate-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200'
+                          }`}
+                        >
+                          {meal.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-400">
+                    Pick as many as you want. The planner will try to fit each stop around your classes.
+                  </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -574,45 +896,110 @@ export default function PlannerPage() {
                     Timeline for your day
                   </h2>
                   <p className="text-sm text-slate-600 dark:text-zinc-300">
-                    Hour-by-hour suggestions based on your classes and campus conditions.
+                    Locked classes stay in place. Drag the other blocks to reorder them and adjust their duration.
                   </p>
                 </div>
               </div>
 
               <div className="mt-5 space-y-4">
-                {plannerResult ? plannerResult.timeline.map((item) => {
-                  const style = kindStyles[item.kind];
-                  const Icon = style.icon;
-                  const blockHeight = Math.max(60, Math.round(item.durationMinutes * 1.6));
-                  const isPast = item.endAt !== null && item.endAt.getTime() <= currentTime.getTime();
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`rounded-2xl border p-4 ${style.border}`}
-                      style={{ minHeight: `${blockHeight}px` }}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className={`rounded-2xl bg-white/85 p-3 dark:bg-zinc-900/80 ${isPast ? 'opacity-60' : ''}`}>
-                            <Icon className={`size-5 ${style.badge}`} />
-                          </div>
-                          <div>
-                            <p className={`text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
-                              {item.time}
-                            </p>
-                            <h3 className={`mt-1 text-lg font-semibold text-gray-900 dark:text-zinc-100 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
-                              {item.title}
-                            </h3>
-                            <p className={`mt-2 text-sm leading-6 text-slate-700 dark:text-zinc-200 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
-                              {item.detail}
-                            </p>
-                          </div>
-                        </div>
+                {plannerResult ? (
+                  classTimelineItems.length === 0 ? (
+                    scheduledSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="space-y-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40"
+                        onDragOver={(event) => {
+                          if (!draggedItem) return;
+                          event.preventDefault();
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          handleDropToSlot(slot.id, slot.items.length);
+                        }}
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                          {slot.label}
+                        </p>
+                        {slot.items.map((item, index) =>
+                          renderTimelineCard(item, {
+                            draggable: item.kind !== 'class',
+                            slotId: slot.id,
+                            onDropIndex: index,
+                            showEditControls: item.kind !== 'class',
+                            locked: item.kind === 'class',
+                          })
+                        )}
                       </div>
-                    </div>
-                  );
-                }) : (
+                    ))
+                  ) : (
+                    <>
+                      {scheduledSlots[0] && (
+                        <div
+                          className="space-y-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40"
+                          onDragOver={(event) => {
+                            if (!draggedItem) return;
+                            event.preventDefault();
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            handleDropToSlot(scheduledSlots[0].id, scheduledSlots[0].items.length);
+                          }}
+                        >
+                          {scheduledSlots[0].items.length > 0 && (
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                              {scheduledSlots[0].label}
+                            </p>
+                          )}
+                          {scheduledSlots[0].items.map((item, index) =>
+                            renderTimelineCard(item, {
+                              draggable: true,
+                              slotId: scheduledSlots[0].id,
+                              onDropIndex: index,
+                              showEditControls: true,
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {classTimelineItems.map((classItem, index) => {
+                        const slot = scheduledSlots[index + 1];
+
+                        return (
+                          <div key={classItem.id} className="space-y-3">
+                            {renderTimelineCard(classItem, { locked: true })}
+                            {slot && (
+                              <div
+                                className="space-y-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-950/40"
+                                onDragOver={(event) => {
+                                  if (!draggedItem) return;
+                                  event.preventDefault();
+                                }}
+                                onDrop={(event) => {
+                                  event.preventDefault();
+                                  handleDropToSlot(slot.id, slot.items.length);
+                                }}
+                              >
+                                {slot.items.length > 0 && (
+                                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                                    {slot.label}
+                                  </p>
+                                )}
+                                {slot.items.map((item, itemIndex) =>
+                                  renderTimelineCard(item, {
+                                    draggable: true,
+                                    slotId: slot.id,
+                                    onDropIndex: itemIndex,
+                                    showEditControls: true,
+                                  })
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </>
+                  )
+                ) : (
                   <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-600 dark:border-zinc-700 dark:text-zinc-300">
                     Your timeline will appear here after you upload a calendar.
                   </div>

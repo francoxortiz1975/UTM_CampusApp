@@ -2,12 +2,13 @@ import type { CampusEvent } from '../events/mockEvents';
 import type { MapBuildingStatus } from '../map/mapAvailability';
 
 export type PlannerTransportMode = 'drive' | 'transit' | 'walk';
+export type PlannerMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export type PlannerPreferences = {
   alreadyOnCampus: boolean;
   transportMode: PlannerTransportMode;
   arrivalMinutes: number;
-  wantsFood: boolean;
+  meals: PlannerMealType[];
   wantsGym: boolean;
   wantsEvents: boolean;
 };
@@ -61,6 +62,52 @@ const GYM_BUILDING = 'davis_rawc';
 const PARKING_BUILDING = 'ccit';
 
 const weekdayTokens = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
+const mealOrder: PlannerMealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+
+const MEAL_CONFIG: Record<
+  PlannerMealType,
+  {
+    label: string;
+    startHour: number;
+    startMinute: number;
+    durationMinutes: number;
+    windowStartHour: number;
+    windowEndHour: number;
+  }
+> = {
+  breakfast: {
+    label: 'Breakfast',
+    startHour: 8,
+    startMinute: 30,
+    durationMinutes: 35,
+    windowStartHour: 7,
+    windowEndHour: 10,
+  },
+  lunch: {
+    label: 'Lunch',
+    startHour: 12,
+    startMinute: 15,
+    durationMinutes: 45,
+    windowStartHour: 11,
+    windowEndHour: 14,
+  },
+  snack: {
+    label: 'Snack',
+    startHour: 15,
+    startMinute: 15,
+    durationMinutes: 25,
+    windowStartHour: 14,
+    windowEndHour: 17,
+  },
+  dinner: {
+    label: 'Dinner',
+    startHour: 18,
+    startMinute: 0,
+    durationMinutes: 50,
+    windowStartHour: 17,
+    windowEndHour: 20,
+  },
+};
 
 function pad(value: number) {
   return String(value).padStart(2, '0');
@@ -513,11 +560,102 @@ function getCampusEventRecommendation(campusEvents: CampusEvent[], dateKey: stri
   return sameDay[0] ?? null;
 }
 
+function atTime(dateKey: string, hour: number, minute = 0) {
+  return new Date(`${dateKey}T${pad(hour)}:${pad(minute)}:00`);
+}
+
+function getMealAnchorBuilding(
+  classes: PlannerCalendarEvent[],
+  mealTime: Date
+) {
+  const precedingClass = [...classes]
+    .filter((course) => course.end <= mealTime)
+    .sort((a, b) => b.end.getTime() - a.end.getTime())[0];
+  if (precedingClass?.buildingId) return precedingClass.buildingId;
+
+  const nextClass = [...classes]
+    .filter((course) => course.start >= mealTime)
+    .sort((a, b) => a.start.getTime() - b.start.getTime())[0];
+  return nextClass?.buildingId ?? null;
+}
+
+function findMealTime(
+  meal: PlannerMealType,
+  classes: PlannerCalendarEvent[],
+  dateKey: string
+) {
+  const config = MEAL_CONFIG[meal];
+  const target = atTime(dateKey, config.startHour, config.startMinute);
+  const windowStart = atTime(dateKey, config.windowStartHour, 0);
+  const windowEnd = atTime(dateKey, config.windowEndHour, 0);
+  const duration = config.durationMinutes;
+  const gapPadding = 10;
+
+  if (classes.length === 0) {
+    return target;
+  }
+
+  const sorted = [...classes].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const windows: Array<{ start: Date; end: Date }> = [];
+
+  if (windowStart < sorted[0].start) {
+    windows.push({
+      start: windowStart,
+      end: new Date(Math.min(windowEnd.getTime(), sorted[0].start.getTime())),
+    });
+  }
+
+  for (let index = 0; index < sorted.length - 1; index += 1) {
+    const start = new Date(Math.max(sorted[index].end.getTime(), windowStart.getTime()));
+    const end = new Date(Math.min(sorted[index + 1].start.getTime(), windowEnd.getTime()));
+    if (start < end) {
+      windows.push({ start, end });
+    }
+  }
+
+  if (sorted[sorted.length - 1].end < windowEnd) {
+    windows.push({
+      start: new Date(Math.max(sorted[sorted.length - 1].end.getTime(), windowStart.getTime())),
+      end: windowEnd,
+    });
+  }
+
+  const viableWindows = windows.filter(
+    (window) => differenceInMinutes(window.end, window.start) >= duration + gapPadding
+  );
+
+  const exactWindow = viableWindows.find(
+    (window) => target >= window.start && addMinutes(target, duration) <= window.end
+  );
+  if (exactWindow) {
+    return target;
+  }
+
+  if (viableWindows.length > 0) {
+    const nearestWindow = [...viableWindows].sort((a, b) => {
+      const aDistance = Math.abs(a.start.getTime() - target.getTime());
+      const bDistance = Math.abs(b.start.getTime() - target.getTime());
+      return aDistance - bDistance;
+    })[0];
+
+    const latestSafeStart = addMinutes(nearestWindow.end, -(duration + gapPadding));
+    if (target < nearestWindow.start) return nearestWindow.start;
+    if (target > latestSafeStart) return latestSafeStart;
+    return target;
+  }
+
+  const fallbackAfter = sorted.find((course) => course.end >= target) ?? sorted[sorted.length - 1];
+  return addMinutes(fallbackAfter.end, gapPadding);
+}
+
 function makeSummary(
   classes: PlannerCalendarEvent[],
   prefs: PlannerPreferences,
   recommendations: {
-    food?: ReturnType<typeof pickFoodRecommendation>;
+    meals: Array<{
+      meal: PlannerMealType;
+      recommendation: ReturnType<typeof pickFoodRecommendation>;
+    }>;
     gym?: ReturnType<typeof pickGymRecommendation>;
     event?: ReturnType<typeof getCampusEventRecommendation>;
   }
@@ -535,8 +673,14 @@ function makeSummary(
   if (!prefs.alreadyOnCampus) {
     pieces.push(`Plan to arrive about ${prefs.arrivalMinutes} minutes before you need to be settled on campus.`);
   }
-  if (prefs.wantsFood && recommendations.food) {
-    pieces.push(`The best food stop today looks like ${recommendations.food.bestVenue.name} in ${recommendations.food.buildingName}.`);
+  if (recommendations.meals.length > 0) {
+    const mealLabels = recommendations.meals.map(({ meal }) => MEAL_CONFIG[meal].label.toLowerCase());
+    const topRecommendation = recommendations.meals[0].recommendation;
+    if (topRecommendation) {
+      pieces.push(
+        `The planner included ${mealLabels.join(', ')} and is steering you toward ${topRecommendation.bestVenue.name} in ${topRecommendation.buildingName}.`
+      );
+    }
   }
   if (prefs.wantsGym && recommendations.gym) {
     pieces.push(`If you work out today, ${recommendations.gym.bestSpot.name} is the least busy option right now.`);
@@ -568,9 +712,24 @@ export function buildPlannerResult({
   const sortedClasses = [...classes].sort((a, b) => a.start.getTime() - b.start.getTime());
   const firstClass = sortedClasses[0] ?? null;
   const lastClass = sortedClasses[sortedClasses.length - 1] ?? null;
-  const foodRecommendation = pickFoodRecommendation(statuses, firstClass?.buildingId ?? null);
   const gymRecommendation = pickGymRecommendation(statuses);
   const parkingRecommendation = pickParkingRecommendation(statuses);
+  const requestedMeals = mealOrder.filter((meal) => preferences.meals.includes(meal));
+  const mealRecommendations = requestedMeals
+    .map((meal) => {
+      const mealTime = findMealTime(meal, sortedClasses, dateKey);
+      const anchorBuildingId = getMealAnchorBuilding(sortedClasses, mealTime);
+      const recommendation = pickFoodRecommendation(statuses, anchorBuildingId);
+
+      return recommendation
+        ? {
+            meal,
+            mealTime,
+            recommendation,
+          }
+        : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   if (!preferences.alreadyOnCampus && firstClass) {
     const arrivalWindow = addMinutes(firstClass.start, -Math.max(10, preferences.arrivalMinutes));
@@ -626,40 +785,24 @@ export function buildPlannerResult({
       });
     }
 
-    const gapMinutes = differenceInMinutes(nextClass.start, course.end);
-    const crossesLunchWindow = course.end.getHours() < 14 && nextClass.start.getHours() >= 11;
-
-    if (preferences.wantsFood && !timeline.some((item) => item.kind === 'food') && gapMinutes >= 35 && crossesLunchWindow && foodRecommendation) {
-      const lunchTime = addMinutes(course.end, 10);
-      timeline.push({
-        id: 'food-stop',
-        time: formatPlannerTime(lunchTime),
-        title: `Grab food at ${foodRecommendation.bestVenue.name}`,
-        detail: `${foodRecommendation.bestVenue.displayValue} wait and about ${foodRecommendation.walkMinutes} minutes away in ${foodRecommendation.buildingName}.`,
-        kind: 'food',
-        startAt: lunchTime,
-        endAt: addMinutes(lunchTime, 45),
-        durationMinutes: 45,
-      });
-    }
   });
 
-  if (preferences.wantsFood && !timeline.some((item) => item.kind === 'food') && foodRecommendation && lastClass) {
-    const fallbackFoodTime = addMinutes(lastClass.end, 15);
+  mealRecommendations.forEach(({ meal, mealTime, recommendation }) => {
+    const config = MEAL_CONFIG[meal];
     timeline.push({
-      id: 'food-fallback',
-      time: formatPlannerTime(fallbackFoodTime),
-      title: `Food option: ${foodRecommendation.bestVenue.name}`,
-      detail: `If you stay on campus after class, ${foodRecommendation.bestVenue.displayValue} is the lightest current wait near ${foodRecommendation.buildingName}.`,
+      id: `food-${meal}`,
+      time: formatPlannerTime(mealTime),
+      title: `${config.label} at ${recommendation.bestVenue.name}`,
+      detail: `${recommendation.bestVenue.displayValue} wait and about ${recommendation.walkMinutes} minutes away in ${recommendation.buildingName}.`,
       kind: 'food',
-      startAt: fallbackFoodTime,
-      endAt: addMinutes(fallbackFoodTime, 45),
-      durationMinutes: 45,
+      startAt: mealTime,
+      endAt: addMinutes(mealTime, config.durationMinutes),
+      durationMinutes: config.durationMinutes,
     });
-  }
+  });
 
   if (preferences.wantsGym && gymRecommendation && lastClass) {
-    const gymTime = addMinutes(lastClass.end, preferences.wantsFood ? 75 : 30);
+    const gymTime = addMinutes(lastClass.end, mealRecommendations.length > 0 ? 75 : 30);
     timeline.push({
       id: 'gym-block',
       time: formatPlannerTime(gymTime),
@@ -726,7 +869,7 @@ export function buildPlannerResult({
 
   return {
     summary: makeSummary(sortedClasses, preferences, {
-      food: foodRecommendation,
+      meals: mealRecommendations.map(({ meal, recommendation }) => ({ meal, recommendation })),
       gym: gymRecommendation,
       event: eventRecommendation,
     }),
