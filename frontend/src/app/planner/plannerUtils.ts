@@ -29,6 +29,9 @@ export type PlannerTimelineItem = {
   title: string;
   detail: string;
   kind: 'travel' | 'class' | 'walk' | 'food' | 'gym' | 'event' | 'note';
+  startAt: Date | null;
+  endAt: Date | null;
+  durationMinutes: number;
 };
 
 export type PlannerResult = {
@@ -255,7 +258,7 @@ type RawCalendarEvent = {
   rrule?: string;
 };
 
-function expandEvent(raw: RawCalendarEvent, horizonDays = 120): PlannerCalendarEvent[] {
+function expandEvent(raw: RawCalendarEvent, horizonDays = 400): PlannerCalendarEvent[] {
   if (!raw.dtstart) return [];
 
   const summary = raw.summary?.trim() || 'Class';
@@ -584,6 +587,9 @@ export function buildPlannerResult({
       title: preferences.transportMode === 'drive' ? 'Head to campus and park' : 'Travel to campus',
       detail: travelDetail,
       kind: 'travel',
+      startAt: arrivalWindow,
+      endAt: firstClass.start,
+      durationMinutes: Math.max(15, differenceInMinutes(firstClass.start, arrivalWindow)),
     });
 
     if (locationDistanceKm !== null) {
@@ -598,6 +604,9 @@ export function buildPlannerResult({
       title: course.title,
       detail: `${course.location} until ${formatPlannerTime(course.end)}.`,
       kind: 'class',
+      startAt: course.start,
+      endAt: course.end,
+      durationMinutes: Math.max(15, differenceInMinutes(course.end, course.start)),
     });
 
     const nextClass = sortedClasses[index + 1];
@@ -611,6 +620,9 @@ export function buildPlannerResult({
         title: 'Walk to your next building',
         detail: `Give yourself about ${walkMins} minutes to move from ${course.location} to ${nextClass.location}.`,
         kind: 'walk',
+        startAt: course.end,
+        endAt: addMinutes(course.end, walkMins),
+        durationMinutes: walkMins,
       });
     }
 
@@ -625,6 +637,9 @@ export function buildPlannerResult({
         title: `Grab food at ${foodRecommendation.bestVenue.name}`,
         detail: `${foodRecommendation.bestVenue.displayValue} wait and about ${foodRecommendation.walkMinutes} minutes away in ${foodRecommendation.buildingName}.`,
         kind: 'food',
+        startAt: lunchTime,
+        endAt: addMinutes(lunchTime, 45),
+        durationMinutes: 45,
       });
     }
   });
@@ -637,6 +652,9 @@ export function buildPlannerResult({
       title: `Food option: ${foodRecommendation.bestVenue.name}`,
       detail: `If you stay on campus after class, ${foodRecommendation.bestVenue.displayValue} is the lightest current wait near ${foodRecommendation.buildingName}.`,
       kind: 'food',
+      startAt: fallbackFoodTime,
+      endAt: addMinutes(fallbackFoodTime, 45),
+      durationMinutes: 45,
     });
   }
 
@@ -648,6 +666,9 @@ export function buildPlannerResult({
       title: `Workout at ${gymRecommendation.bestSpot.name}`,
       detail: `${gymRecommendation.bestSpot.displayValue} occupancy right now in ${gymRecommendation.buildingName}.`,
       kind: 'gym',
+      startAt: gymTime,
+      endAt: addMinutes(gymTime, 60),
+      durationMinutes: 60,
     });
   }
 
@@ -662,6 +683,15 @@ export function buildPlannerResult({
       title: `Campus event: ${eventRecommendation.title}`,
       detail: `${eventRecommendation.club} at ${eventRecommendation.location ?? 'campus location'} until ${eventRecommendation.endTime}.`,
       kind: 'event',
+      startAt: eventRecommendation.start,
+      endAt: new Date(`${eventRecommendation.date}T${eventRecommendation.endTime}:00`),
+      durationMinutes: Math.max(
+        30,
+        differenceInMinutes(
+          new Date(`${eventRecommendation.date}T${eventRecommendation.endTime}:00`),
+          eventRecommendation.start
+        )
+      ),
     });
   } else if (preferences.wantsEvents) {
     notes.push('No same-day campus events were found after your classes, so the planner did not add one.');
@@ -672,8 +702,11 @@ export function buildPlannerResult({
       id: 'note',
       time: 'Today',
       title: 'No class data found',
-      detail: 'Upload a valid calendar export or use the demo schedule to generate a campus plan.',
+      detail: 'Upload a valid calendar export to generate a campus plan for this day.',
       kind: 'note',
+      startAt: null,
+      endAt: null,
+      durationMinutes: 30,
     });
   }
 

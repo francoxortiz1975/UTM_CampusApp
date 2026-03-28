@@ -21,8 +21,9 @@ import {
   loadAllBuildingStatuses,
   type MapBuildingStatus,
 } from '../map/mapAvailability';
+import { Profile, type User } from '../../types/Authentication';
+import { loadSavedPlannerCalendar, savePlannerCalendar } from './plannerApi';
 import {
-  buildDemoClasses,
   buildPlannerResult,
   estimateArrivalMinutes,
   estimateDistanceToCampusKm,
@@ -31,6 +32,7 @@ import {
   getAvailableDateKeys,
   getEventsForDate,
   parseIcsCalendar,
+  type PlannerCalendarEvent,
   type PlannerPreferences,
   type PlannerTimelineItem,
 } from './plannerUtils';
@@ -86,18 +88,20 @@ const kindStyles: Record<
 };
 
 export default function PlannerPage() {
-  const [calendarEvents, setCalendarEvents] = useState(() => buildDemoClasses(new Date()));
-  const [calendarSource, setCalendarSource] = useState<'demo' | 'ics'>('demo');
+  const todayKey = formatDateKey(new Date());
+  const [calendarEvents, setCalendarEvents] = useState<PlannerCalendarEvent[]>([]);
+  const [calendarSource, setCalendarSource] = useState<'empty' | 'ics' | 'saved'>('empty');
   const [uploadMessage, setUploadMessage] = useState(
-    'Using a built-in demo schedule right now. Upload a UTM calendar export to personalize it.'
+    'Upload a UTM `.ics` calendar to build a personalized plan for today.'
   );
-  const [selectedDate, setSelectedDate] = useState(() => formatDateKey(new Date()));
+  const [selectedDate, setSelectedDate] = useState(todayKey);
   const [preferences, setPreferences] = useState<PlannerPreferences>(initialPreferences);
   const [statuses, setStatuses] = useState<Record<string, MapBuildingStatus>>(() =>
     Object.fromEntries(
       MAP_BUILDINGS.map((building) => [building.id, buildFallbackStatus(building)])
     )
   );
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [locationDistanceKm, setLocationDistanceKm] = useState<number | null>(null);
@@ -105,6 +109,9 @@ export default function PlannerPage() {
     'Want a rough commute estimate? Use your location to autofill arrival time.'
   );
   const [isLocating, setIsLocating] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  const hasCalendar = calendarSource !== 'empty' && calendarEvents.length > 0;
 
   useEffect(() => {
     let isMounted = true;
@@ -126,6 +133,57 @@ export default function PlannerPage() {
   }, []);
 
   useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUserCalendar() {
+      const user = await Profile();
+      if (!isMounted) return;
+
+      setCurrentUser(user);
+
+      if (!user) {
+        setUploadMessage(
+          'Upload a UTM `.ics` calendar to build a personalized plan for today. If you sign in first, we will save it to your account.'
+        );
+        return;
+      }
+
+      const savedCalendar = await loadSavedPlannerCalendar();
+      if (!isMounted) return;
+
+      if (savedCalendar?.calendar_text) {
+        const parsed = parseIcsCalendar(savedCalendar.calendar_text);
+
+        if (parsed.events.length > 0) {
+          setCalendarEvents(parsed.events);
+          setCalendarSource('saved');
+          setSelectedDate(todayKey);
+          setUploadMessage('Loaded your saved calendar. Upload a new file any time to replace it.');
+          return;
+        }
+      }
+
+      setUploadMessage(
+        'You are signed in. Upload your `.ics` calendar once and we will save it to your account for future visits.'
+      );
+    }
+
+    loadUserCalendar();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [todayKey]);
+
+  useEffect(() => {
     if (locationDistanceKm === null || preferences.alreadyOnCampus) return;
 
     const nextArrival = estimateArrivalMinutes(locationDistanceKm, preferences.transportMode);
@@ -135,15 +193,15 @@ export default function PlannerPage() {
   }, [locationDistanceKm, preferences.transportMode, preferences.alreadyOnCampus]);
 
   const availableDates = useMemo(
-    () => getAvailableDateKeys(calendarEvents),
-    [calendarEvents]
+    () => Array.from(new Set([todayKey, ...getAvailableDateKeys(calendarEvents)])).sort(),
+    [calendarEvents, todayKey]
   );
 
   useEffect(() => {
     if (!availableDates.includes(selectedDate)) {
-      setSelectedDate(availableDates[0] ?? formatDateKey(new Date()));
+      setSelectedDate(todayKey);
     }
-  }, [availableDates, selectedDate]);
+  }, [availableDates, selectedDate, todayKey]);
 
   const classesForSelectedDate = useMemo(
     () => getEventsForDate(calendarEvents, selectedDate),
@@ -152,15 +210,17 @@ export default function PlannerPage() {
 
   const plannerResult = useMemo(
     () =>
-      buildPlannerResult({
-        classes: classesForSelectedDate,
-        preferences,
-        statuses,
-        campusEvents: MOCK_EVENTS,
-        dateKey: selectedDate,
-        locationDistanceKm,
-      }),
-    [classesForSelectedDate, preferences, statuses, selectedDate, locationDistanceKm]
+      hasCalendar
+        ? buildPlannerResult({
+            classes: classesForSelectedDate,
+            preferences,
+            statuses,
+            campusEvents: MOCK_EVENTS,
+            dateKey: selectedDate,
+            locationDistanceKm,
+          })
+        : null,
+    [classesForSelectedDate, preferences, statuses, selectedDate, locationDistanceKm, hasCalendar]
   );
 
   async function handleCalendarUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -176,32 +236,32 @@ export default function PlannerPage() {
       if (parsed.events.length === 0) {
         setUploadMessage(
           parsed.warnings[0] ??
-            'That file did not contain any readable calendar events, so the demo schedule is still active.'
+            'That file did not contain any readable calendar events, so the current planner stayed unchanged.'
         );
-        setCalendarEvents(buildDemoClasses(new Date()));
-        setCalendarSource('demo');
-        setSelectedDate(formatDateKey(new Date()));
         return;
       }
 
       setCalendarEvents(parsed.events);
-      setCalendarSource('ics');
-      setSelectedDate(getAvailableDateKeys(parsed.events)[0] ?? formatDateKey(new Date()));
-      setUploadMessage(
-        `Loaded ${parsed.events.length} class block${parsed.events.length === 1 ? '' : 's'} from ${file.name}.`
-      );
+      setSelectedDate(todayKey);
+
+      if (currentUser) {
+        const saved = await savePlannerCalendar(text);
+        setCalendarSource(saved ? 'saved' : 'ics');
+        setUploadMessage(
+          saved
+            ? `Loaded ${parsed.events.length} class block${parsed.events.length === 1 ? '' : 's'} from ${file.name} and saved it to your account.`
+            : `Loaded ${parsed.events.length} class block${parsed.events.length === 1 ? '' : 's'} from ${file.name}, but could not save it to your account right now.`
+        );
+      } else {
+        setCalendarSource('ics');
+        setUploadMessage(
+          `Loaded ${parsed.events.length} class block${parsed.events.length === 1 ? '' : 's'} from ${file.name}. Sign in before uploading if you want us to save it to your account.`
+        );
+      }
     } finally {
       setIsParsingFile(false);
       event.target.value = '';
     }
-  }
-
-  function handleUseDemoSchedule() {
-    const demo = buildDemoClasses(new Date());
-    setCalendarEvents(demo);
-    setCalendarSource('demo');
-    setSelectedDate(formatDateKey(new Date()));
-    setUploadMessage('Demo schedule restored. You can still upload a real calendar file any time.');
   }
 
   function handleUseLocation() {
@@ -278,7 +338,7 @@ export default function PlannerPage() {
                     Upload your course calendar
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-zinc-300">
-                    The planner accepts `.ics` exports and can also fall back to a built-in demo day.
+                    The planner accepts `.ics` exports. If you are signed in, your upload will be saved to your account.
                   </p>
                 </div>
               </div>
@@ -292,14 +352,6 @@ export default function PlannerPage() {
                 />
                 {isParsingFile ? 'Reading calendar file...' : 'Choose .ics file'}
               </label>
-
-              <button
-                type="button"
-                onClick={handleUseDemoSchedule}
-                className="mt-3 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-white dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-              >
-                Use demo schedule
-              </button>
 
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-zinc-300">
                 {uploadMessage}
@@ -455,7 +507,9 @@ export default function PlannerPage() {
                   ))
                 ) : (
                   <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-600 dark:border-zinc-700 dark:text-zinc-300">
-                    No classes were found for this date yet.
+                    {hasCalendar
+                      ? 'No classes were found for this date.'
+                      : 'Upload your calendar to see your classes for today.'}
                   </div>
                 )}
               </div>
@@ -474,10 +528,12 @@ export default function PlannerPage() {
                   </h2>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
-                    {calendarSource === 'ics' ? 'Uploaded calendar' : 'Demo schedule'}
-                  </span>
-                  {nextCampusEvent && (
+                  {calendarSource !== 'empty' && (
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
+                      {calendarSource === 'saved' ? 'Saved calendar' : 'Uploaded calendar'}
+                    </span>
+                  )}
+                  {hasCalendar && nextCampusEvent && (
                     <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
                       Event later: {nextCampusEvent.title}
                     </span>
@@ -485,21 +541,27 @@ export default function PlannerPage() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/50 dark:bg-blue-950/30">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl bg-white/80 p-3 text-blue-700 dark:bg-zinc-900 dark:text-blue-200">
-                    <Sparkles className="size-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
-                      Planner summary
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-zinc-200">
-                      {plannerResult.summary}
-                    </p>
+              {plannerResult ? (
+                <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 dark:border-blue-900/50 dark:bg-blue-950/30">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-white/80 p-3 text-blue-700 dark:bg-zinc-900 dark:text-blue-200">
+                      <Sparkles className="size-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                        Planner summary
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-zinc-200">
+                        {plannerResult.summary}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-6 text-sm leading-7 text-slate-600 dark:border-zinc-700 dark:bg-zinc-950/50 dark:text-zinc-300">
+                  Upload your `.ics` calendar to generate a personalized plan for today. If you are signed in, we will save it so you do not need to upload it again.
+                </div>
+              )}
             </div>
 
             <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/85 dark:shadow-black/30">
@@ -518,28 +580,31 @@ export default function PlannerPage() {
               </div>
 
               <div className="mt-5 space-y-4">
-                {plannerResult.timeline.map((item) => {
+                {plannerResult ? plannerResult.timeline.map((item) => {
                   const style = kindStyles[item.kind];
                   const Icon = style.icon;
+                  const blockHeight = Math.max(60, Math.round(item.durationMinutes * 1.6));
+                  const isPast = item.endAt !== null && item.endAt.getTime() <= currentTime.getTime();
 
                   return (
                     <div
                       key={item.id}
                       className={`rounded-2xl border p-4 ${style.border}`}
+                      style={{ minHeight: `${blockHeight}px` }}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          <div className="rounded-2xl bg-white/85 p-3 dark:bg-zinc-900/80">
+                          <div className={`rounded-2xl bg-white/85 p-3 dark:bg-zinc-900/80 ${isPast ? 'opacity-60' : ''}`}>
                             <Icon className={`size-5 ${style.badge}`} />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400">
+                            <p className={`text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-zinc-400 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
                               {item.time}
                             </p>
-                            <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-zinc-100">
+                            <h3 className={`mt-1 text-lg font-semibold text-gray-900 dark:text-zinc-100 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
                               {item.title}
                             </h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-zinc-200">
+                            <p className={`mt-2 text-sm leading-6 text-slate-700 dark:text-zinc-200 ${isPast ? 'line-through decoration-2 opacity-70' : ''}`}>
                               {item.detail}
                             </p>
                           </div>
@@ -547,10 +612,14 @@ export default function PlannerPage() {
                       </div>
                     </div>
                   );
-                })}
+                }) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-600 dark:border-zinc-700 dark:text-zinc-300">
+                    Your timeline will appear here after you upload a calendar.
+                  </div>
+                )}
               </div>
 
-              {plannerResult.notes.length > 0 && (
+              {plannerResult && plannerResult.notes.length > 0 && (
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
                   <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-400">
                     Planner notes
