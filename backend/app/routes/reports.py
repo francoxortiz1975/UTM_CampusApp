@@ -227,6 +227,7 @@ def full_day_report(month, day, page, name):
         return jsonify(report_data)
 
     except Exception as e:
+        print(e)
         status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
         return status.json(), status.code()
 
