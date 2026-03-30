@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarDays, Car, Dumbbell, Map, Utensils, PackageOpen } from 'lucide-react';
+import { CalendarDays, Car, Dumbbell, Map, PackageOpen, Sparkles, Utensils } from 'lucide-react';
 import Header from '../components/Header';
 
 const apps = [
@@ -51,6 +51,14 @@ const apps = [
         accent:
             'bg-amber-100 text-amber-800 ring-amber-200/80 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-800/50',
     },
+    {
+        name: 'Day Planner',
+        description: 'Upload your calendar and generate a campus plan around classes, food, and gym time.',
+        href: '/planner',
+        icon: Sparkles,
+        accent:
+            'bg-cyan-100 text-cyan-800 ring-cyan-200/80 dark:bg-cyan-950/60 dark:text-cyan-200 dark:ring-cyan-800/50',
+    },
 ] as const;
 
 export default function Home() {
@@ -89,7 +97,7 @@ export default function Home() {
                     >
                         Choose a service
                     </h2>
-                    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-6">
+                    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                         {apps.map((app) => {
                             const Icon = app.icon;
                             return (

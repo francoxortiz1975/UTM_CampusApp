@@ -3,17 +3,7 @@
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
 import { Profile } from '../../types/Authentication';
-
-interface Event {
-  id: string;
-  title: string;
-  club: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location?: string;
-  description?: string;
-}
+import { type CampusEvent as Event } from './mockEvents';
 
 const admins = [1, 9]; // Hard-coded admin user IDs
 
