@@ -7,14 +7,7 @@
 4. linux: `sudo apt install bluetooth bluez` windows: Not needed
 
 # RUNNING
-1. linux: `sudo systemctl start bluetooth` windows : Not needed
-2. `sudo airmon-ng check kill`
-3. `sudo airmon-ng start wlan0`
-4. `python3 scanner.py`
-
-# STOPPING
-1. `sudo airmon-ng stop wlan0mon`
-2. `sudo service NetworkManager restart`
+4. `python scanner.py --title <report title>`
 
 # UPDATING DEPENDENCYS
 1. Install any required dependencies
