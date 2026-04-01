@@ -244,10 +244,13 @@ export default function EventsPage() {
 
   // ---------------- Render ----------------
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0b0c10] dark:text-zinc-100">
+      <div className="pointer-events-none absolute -left-20 -top-16 h-80 w-80 rounded-full bg-white/70 blur-3xl dark:bg-white/10" />
+      <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-violet-200/30 blur-3xl dark:bg-violet-600/10" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
 
-      <div className="flex w-full pt-6 px-6 gap-6">
+      <div className="relative z-10 flex w-full pt-6 px-6 gap-6">
         {/* Sidebar */}
         <aside className="w-64 bg-white dark:bg-zinc-900 p-6 shadow rounded-xl space-y-4 h-fit border border-transparent dark:border-zinc-800 shrink-0">
           <button
