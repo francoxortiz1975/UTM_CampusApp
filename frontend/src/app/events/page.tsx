@@ -3,6 +3,7 @@
 import Header from '../../components/Header';
 import { useState, useEffect } from 'react';
 import { Profile } from '../../types/Authentication';
+import Link from 'next/link';
 
 interface Event {
   id: string;
@@ -281,6 +282,13 @@ export default function EventsPage() {
             <option value="all">All Clubs</option>
             {allClubs.map(club => <option key={club}>{club}</option>)}
           </select>
+
+          <Link
+            href="/eventshuffle"
+            className="block w-full text-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-2 rounded-lg hover:bg-black dark:hover:bg-white"
+          >
+            Open Event Shuffle
+          </Link>
         </aside>
 
         {/* Main */}
