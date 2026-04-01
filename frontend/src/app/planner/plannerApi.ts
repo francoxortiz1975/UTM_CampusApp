@@ -1,10 +1,10 @@
 function apiBase(): string {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || 'localhost';
-    return `http://${host}:5000`;
+    return `http://${host}:5001`;
   }
 
-  return 'http://localhost:5000';
+  return 'http://localhost:5001';
 }
 
 export type SavedPlannerCalendar = {

@@ -453,8 +453,8 @@ const today = new Date().toLocaleDateString(undefined, {
 
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 const FOOD_OVERRIDES_KEY = 'placeholder:foodWaitOverrides';
 
 function buildFoodTrendData(current: number): { time: string; wait: number }[] {

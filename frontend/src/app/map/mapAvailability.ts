@@ -24,8 +24,8 @@ export type MapBuildingStatus = {
 
 const apiBase =
     typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-        ? 'http://127.0.0.1:5000'
-        : 'http://localhost:5000';
+        ? 'http://127.0.0.1:5001'
+        : 'http://localhost:5001';
 
 function getTimeContext() {
     const now = new Date();

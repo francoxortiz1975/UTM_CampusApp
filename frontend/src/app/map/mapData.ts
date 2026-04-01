@@ -17,6 +17,7 @@ export type MapPolygon = {
     labelX: number;
     labelY: number;
     labelWidth?: number;
+    labelFontSize?: number;
 };
 
 export type MapBuildingConfig = {
@@ -34,17 +35,24 @@ export const MAP_VIEWBOX = {
     height: 900,
 } as const;
 
+/*
+ * Building polygon coordinates are derived from real GPS positions projected
+ * into the 1200x900 SVG viewbox.  The projection uses:
+ *   lat  43.5475 -> 43.5525   (south -> north  =  y 820 -> y 80)
+ *   lng -79.6680 -> -79.6590  (west  -> east   =  x 80  -> x 1120)
+ */
+
 export const MAP_BUILDINGS: MapBuildingConfig[] = [
     {
         id: 'mn',
         label: 'MN',
         name: 'Maanjiwe Nendamowinan',
         description:
-            'A west-side academic building represented through the Fair Trade Cafe signal.',
+            'A northwest academic building home to the Fair Trade Cafe and connected to Deerfield Hall.',
         polygon: {
-            points: '192,168 276,122 352,164 334,292 254,362 176,316 158,228',
-            labelX: 254,
-            labelY: 238,
+            points: '178,248 280,244 286,275 280,306 178,310 172,280',
+            labelX: 228,
+            labelY: 278,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -57,11 +65,11 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'DH',
         name: 'Deerfield Hall',
         description:
-            'The southwest academic cluster anchored by Starbucks and the Deerfield food vendors.',
+            'The northwest academic cluster anchored by Starbucks and the Deerfield food court.',
         polygon: {
-            points: '166,350 286,332 314,426 278,510 176,486 146,404',
-            labelX: 228,
-            labelY: 422,
+            points: '205,340 322,336 328,370 322,404 205,408 198,374',
+            labelX: 264,
+            labelY: 372,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -81,11 +89,11 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'OPH',
         name: 'Oscar Peterson Hall',
         description:
-            'A residence-side food zone that gives the southwest portion of campus a live dining signal.',
+            'The residence dining hall on the west side of campus with a wide selection of food options.',
         polygon: {
-            points: '304,650 372,622 432,676 356,742',
-            labelX: 364,
-            labelY: 682,
+            points: '214,598 304,594 310,625 304,656 214,660 208,630',
+            labelX: 260,
+            labelY: 628,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -119,11 +127,11 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'IB',
         name: 'Instructional Building',
         description:
-            'The north-side classroom building with the compact Instructional Building food cluster.',
+            'The large north-central classroom building with its own compact food cluster.',
         polygon: {
-            points: '470,90 664,72 716,132 676,206 494,186 446,122',
-            labelX: 580,
-            labelY: 138,
+            points: '490,182 636,178 642,212 636,246 490,250 484,216',
+            labelX: 562,
+            labelY: 215,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -140,11 +148,11 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'CCIT',
         name: 'Communication, Culture, Information and Technology',
         description:
-            'The library-side zone that ties together Circuit Break Cafe and the nearby CCT Garage.',
+            'The east-central technology building near the library, home to Circuit Break Cafe and CCT Garage.',
         polygon: {
-            points: '700,208 804,196 840,298 822,398 742,428 688,352 688,252',
-            labelX: 762,
-            labelY: 306,
+            points: '628,396 728,392 734,428 728,462 628,466 622,432',
+            labelX: 678,
+            labelY: 430,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -160,12 +168,13 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'Student\nCentre',
         name: 'Student Centre',
         description:
-            'The central student hub that bundles The Blind Duck Pub and Chatime into one stop.',
+            'The central student hub on Inner Circle, home to The Blind Duck Pub and Chatime.',
         polygon: {
-            points: '520,610 606,584 646,704 618,812 530,782 496,680',
-            labelX: 568,
-            labelY: 694,
+            points: '460,548 556,544 562,578 556,612 460,616 454,582',
+            labelX: 508,
+            labelY: 580,
             labelWidth: 110,
+            labelFontSize: 14,
         },
         links: [
             { label: 'Open Food', href: '/food' },
@@ -181,29 +190,28 @@ export const MAP_BUILDINGS: MapBuildingConfig[] = [
         label: 'KN',
         name: 'Kaneff Centre',
         description:
-            'The south-central campus building that is currently represented by the Second Cup queue.',
+            'The south-central academic building on Inner Circle, home to Second Cup.',
         polygon: {
-            points: '662,720 790,698 806,844 676,872 620,792',
-            labelX: 716,
-            labelY: 786,
+            points: '576,642 662,638 668,668 662,698 576,702 570,672',
+            labelX: 618,
+            labelY: 670,
         },
         links: [
             { label: 'Open Food', href: '/food' },
             { label: 'Open Events', href: '/events' },
         ],
-        resources: [{ kind: 'food', id: '4', name: 'Second Cup Café', fallbackValue: 3 }],
+        resources: [{ kind: 'food', id: '4', name: 'Second Cup Caf\u00e9', fallbackValue: 3 }],
     },
     {
         id: 'davis_rawc',
         label: 'Davis /\nRAWC',
         name: 'Davis Building and RAWC',
         description:
-            'A combined southeast activity zone that merges Davis food traffic with the main RAWC gym signal.',
+            'The large southeast complex combining Davis food court with the RAWC athletic centre.',
         polygon: {
-            points:
-                '802,694 968,662 1098,724 1088,924 934,944 822,916 766,838 774,762 852,748 850,694',
-            labelX: 936,
-            labelY: 810,
+            points: '790,618 950,614 958,650 954,708 932,728 802,732 786,712 782,656',
+            labelX: 870,
+            labelY: 672,
             labelWidth: 150,
         },
         links: [

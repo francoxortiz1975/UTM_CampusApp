@@ -11,6 +11,7 @@ export type PlannerPreferences = {
   meals: PlannerMealType[];
   wantsGym: boolean;
   wantsEvents: boolean;
+  studyHours: number; // 0 = no study blocks, 1-8 = desired study hours
 };
 
 export type PlannerCalendarEvent = {
@@ -29,7 +30,7 @@ export type PlannerTimelineItem = {
   time: string;
   title: string;
   detail: string;
-  kind: 'travel' | 'class' | 'walk' | 'food' | 'gym' | 'event' | 'note';
+  kind: 'travel' | 'class' | 'walk' | 'food' | 'gym' | 'event' | 'study' | 'note';
   startAt: Date | null;
   endAt: Date | null;
   durationMinutes: number;
@@ -47,14 +48,14 @@ const CAMPUS_CENTER = {
 };
 
 const BUILDING_POINTS: Record<string, { x: number; y: number; name: string }> = {
-  mn: { x: 254, y: 238, name: 'Maanjiwe Nendamowinan' },
-  dh: { x: 228, y: 422, name: 'Deerfield Hall' },
-  oph: { x: 364, y: 682, name: 'Oscar Peterson Hall' },
-  ib: { x: 580, y: 138, name: 'Instructional Building' },
-  ccit: { x: 762, y: 306, name: 'CCIT' },
-  student: { x: 568, y: 694, name: 'Student Centre' },
-  kn: { x: 716, y: 786, name: 'Kaneff Centre' },
-  davis_rawc: { x: 936, y: 810, name: 'Davis / RAWC' },
+  mn: { x: 228, y: 278, name: 'Maanjiwe Nendamowinan' },
+  dh: { x: 264, y: 372, name: 'Deerfield Hall' },
+  oph: { x: 260, y: 628, name: 'Oscar Peterson Hall' },
+  ib: { x: 562, y: 215, name: 'Instructional Building' },
+  ccit: { x: 678, y: 430, name: 'CCIT' },
+  student: { x: 508, y: 580, name: 'Student Centre' },
+  kn: { x: 618, y: 670, name: 'Kaneff Centre' },
+  davis_rawc: { x: 870, y: 672, name: 'Davis / RAWC' },
 };
 
 const FOOD_BUILDINGS = ['mn', 'dh', 'oph', 'ib', 'ccit', 'student', 'kn', 'davis_rawc'] as const;
@@ -64,7 +65,7 @@ const PARKING_BUILDING = 'ccit';
 const weekdayTokens = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
 const mealOrder: PlannerMealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
 
-const MEAL_CONFIG: Record<
+export const MEAL_CONFIG: Record<
   PlannerMealType,
   {
     label: string;
@@ -501,6 +502,38 @@ function getBuildingStatus(statuses: Record<string, MapBuildingStatus>, building
   return statuses[buildingId];
 }
 
+export type FoodVenueOption = {
+  buildingId: string;
+  buildingName: string;
+  venueName: string;
+  displayValue: string;
+  score: number;
+  walkMinutes: number;
+};
+
+export function getAllFoodVenues(
+  statuses: Record<string, MapBuildingStatus>,
+  anchorBuildingId: string | null
+): FoodVenueOption[] {
+  const venues: FoodVenueOption[] = [];
+  for (const buildingId of FOOD_BUILDINGS) {
+    const status = getBuildingStatus(statuses, buildingId);
+    if (!status) continue;
+    for (const venue of status.resources.food) {
+      const walk = walkingMinutes(anchorBuildingId, buildingId);
+      venues.push({
+        buildingId,
+        buildingName: BUILDING_POINTS[buildingId].name,
+        venueName: venue.name,
+        displayValue: venue.displayValue,
+        score: venue.value + walk * 1.5,
+        walkMinutes: walk,
+      });
+    }
+  }
+  return venues.sort((a, b) => a.score - b.score);
+}
+
 function pickFoodRecommendation(
   statuses: Record<string, MapBuildingStatus>,
   anchorBuildingId: string | null
@@ -692,6 +725,36 @@ function makeSummary(
   return pieces.join(' ');
 }
 
+/**
+ * Pick the best gym time by checking capacity at candidate hours.
+ * Returns the hour (among candidates) with the lowest estimated capacity.
+ */
+function pickBestGymTime(
+  statuses: Record<string, MapBuildingStatus>,
+  candidateSlots: Date[]
+): Date {
+  if (candidateSlots.length === 0) return new Date();
+  if (candidateSlots.length === 1) return candidateSlots[0];
+
+  const gymStatus = getBuildingStatus(statuses, GYM_BUILDING);
+  if (!gymStatus || gymStatus.resources.gym.length === 0) return candidateSlots[0];
+
+  // Use the average gym capacity as a proxy; compare hour-of-day since
+  // the live data is already for the current hour.  We use a simple heuristic:
+  // the farther from peak hours (12-14, 16-18), the better.
+  const peakPenalty = (date: Date) => {
+    const h = date.getHours();
+    // Noon-2pm and 4-7pm are peak gym times
+    if (h >= 12 && h <= 13) return 30;
+    if (h >= 16 && h <= 18) return 25;
+    if (h >= 14 && h <= 15) return 15;
+    if (h >= 19 && h <= 20) return 10;
+    return 0;
+  };
+
+  return [...candidateSlots].sort((a, b) => peakPenalty(a) - peakPenalty(b))[0];
+}
+
 export function buildPlannerResult({
   classes,
   preferences,
@@ -699,6 +762,8 @@ export function buildPlannerResult({
   campusEvents,
   dateKey,
   locationDistanceKm,
+  customEvents = [],
+  pinnedTimes = {},
 }: {
   classes: PlannerCalendarEvent[];
   preferences: PlannerPreferences;
@@ -706,57 +771,114 @@ export function buildPlannerResult({
   campusEvents: CampusEvent[];
   dateKey: string;
   locationDistanceKm: number | null;
+  customEvents?: PlannerTimelineItem[];
+  pinnedTimes?: Record<string, Date>;
 }): PlannerResult {
   const timeline: PlannerTimelineItem[] = [];
   const notes: string[] = [];
+  const now = new Date();
   const sortedClasses = [...classes].sort((a, b) => a.start.getTime() - b.start.getTime());
-  const firstClass = sortedClasses[0] ?? null;
   const lastClass = sortedClasses[sortedClasses.length - 1] ?? null;
   const gymRecommendation = pickGymRecommendation(statuses);
   const parkingRecommendation = pickParkingRecommendation(statuses);
-  const requestedMeals = mealOrder.filter((meal) => preferences.meals.includes(meal));
-  const mealRecommendations = requestedMeals
-    .map((meal) => {
-      const mealTime = findMealTime(meal, sortedClasses, dateKey);
-      const anchorBuildingId = getMealAnchorBuilding(sortedClasses, mealTime);
-      const recommendation = pickFoodRecommendation(statuses, anchorBuildingId);
 
-      return recommendation
-        ? {
-            meal,
-            mealTime,
-            recommendation,
-          }
-        : null;
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+  // Multiple snacks: count how many snack entries appear in the meals array
+  const requestedMeals: PlannerMealType[] = [];
+  for (const meal of preferences.meals) {
+    requestedMeals.push(meal);
+  }
 
-  if (!preferences.alreadyOnCampus && firstClass) {
-    const arrivalWindow = addMinutes(firstClass.start, -Math.max(10, preferences.arrivalMinutes));
+  // Track which venue names have been used per run so each meal gets a different restaurant
+  const usedVenueNames = new Set<string>();
+
+  // ── 0. Custom events (HIGHEST priority — mark busy first) ──
+  const busyIntervals: Array<{ start: Date; end: Date }> = [];
+
+  function markBusy(start: Date, end: Date) {
+    busyIntervals.push({ start, end });
+    busyIntervals.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }
+
+  function findEarliestFreeSlot(
+    earliest: Date,
+    durationMins: number,
+    windowEnd?: Date
+  ): Date {
+    let cursor = new Date(earliest);
+    for (const interval of busyIntervals) {
+      const slotEnd = addMinutes(cursor, durationMins);
+      if (cursor < interval.end && slotEnd > interval.start) {
+        cursor = new Date(interval.end.getTime() + 5 * 60_000);
+      }
+    }
+    if (windowEnd && cursor > windowEnd) {
+      return addMinutes(windowEnd, -durationMins);
+    }
+    return cursor;
+  }
+
+  // Custom events are immutable — they always occupy their exact time slots
+  for (const ce of customEvents) {
+    if (ce.startAt && ce.endAt) {
+      markBusy(ce.startAt, ce.endAt);
+    }
+  }
+
+  // ── 1. Commute: pinnable departure time, otherwise anchored to NOW ──
+  let campusAvailableAt: Date | null = null;
+
+  if (!preferences.alreadyOnCampus) {
+    const travelMinutes = Math.max(10, preferences.arrivalMinutes);
+    const pinnedDeparture = pinnedTimes['commute'];
+    const departureTime = pinnedDeparture ?? now;
+    const arrivalTime = addMinutes(departureTime, travelMinutes);
+
     const travelDetail =
       preferences.transportMode === 'drive'
         ? parkingRecommendation
-          ? `Leave enough time to park near ${parkingRecommendation.buildingName}. ${parkingRecommendation.bestLot.name} is showing about ${parkingRecommendation.bestLot.displayValue} full.`
-          : 'Leave enough time to park before your first class.'
-        : `Leave for campus so you arrive around ${formatPlannerTime(arrivalWindow)}.`;
+          ? `${pinnedDeparture ? 'Planned departure' : 'Leave now'} to arrive by ${formatPlannerTime(arrivalTime)}. ${parkingRecommendation.bestLot.name} is showing about ${parkingRecommendation.bestLot.displayValue} full.`
+          : `${pinnedDeparture ? 'Planned departure' : 'Leave now'} to arrive by ${formatPlannerTime(arrivalTime)}.`
+        : `${pinnedDeparture ? 'Planned departure' : 'Leave now'} to arrive on campus around ${formatPlannerTime(arrivalTime)}.`;
 
     timeline.push({
       id: 'commute',
-      time: formatPlannerTime(arrivalWindow),
+      time: formatPlannerTime(departureTime),
       title: preferences.transportMode === 'drive' ? 'Head to campus and park' : 'Travel to campus',
       detail: travelDetail,
       kind: 'travel',
-      startAt: arrivalWindow,
-      endAt: firstClass.start,
-      durationMinutes: Math.max(15, differenceInMinutes(firstClass.start, arrivalWindow)),
+      startAt: departureTime,
+      endAt: arrivalTime,
+      durationMinutes: travelMinutes,
     });
+
+    markBusy(departureTime, arrivalTime);
+    campusAvailableAt = arrivalTime;
 
     if (locationDistanceKm !== null) {
       notes.push(`Current location estimate: about ${locationDistanceKm.toFixed(1)} km from UTM.`);
     }
   }
 
+  // ── 2. Classes + walks ──
   sortedClasses.forEach((course, index) => {
+    if (index > 0) {
+      const prevClass = sortedClasses[index - 1];
+      if (prevClass.buildingId !== course.buildingId) {
+        const walkMins = walkingMinutes(prevClass.buildingId, course.buildingId);
+        const walkStart = addMinutes(course.start, -walkMins);
+        timeline.push({
+          id: `walk-${prevClass.id}`,
+          time: formatPlannerTime(walkStart),
+          title: 'Walk to your next building',
+          detail: `Give yourself about ${walkMins} minutes to move from ${prevClass.location} to ${course.location}.`,
+          kind: 'walk',
+          startAt: walkStart,
+          endAt: course.start,
+          durationMinutes: walkMins,
+        });
+      }
+    }
+
     timeline.push({
       id: `class-${course.id}`,
       time: formatPlannerTime(course.start),
@@ -767,30 +889,93 @@ export function buildPlannerResult({
       endAt: course.end,
       durationMinutes: Math.max(15, differenceInMinutes(course.end, course.start)),
     });
-
-    const nextClass = sortedClasses[index + 1];
-    if (!nextClass) return;
-
-    if (course.buildingId !== nextClass.buildingId) {
-      const walkMins = walkingMinutes(course.buildingId, nextClass.buildingId);
-      timeline.push({
-        id: `walk-${course.id}`,
-        time: formatPlannerTime(course.end),
-        title: 'Walk to your next building',
-        detail: `Give yourself about ${walkMins} minutes to move from ${course.location} to ${nextClass.location}.`,
-        kind: 'walk',
-        startAt: course.end,
-        endAt: addMinutes(course.end, walkMins),
-        durationMinutes: walkMins,
-      });
-    }
-
   });
 
-  mealRecommendations.forEach(({ meal, mealTime, recommendation }) => {
-    const config = MEAL_CONFIG[meal];
+  // ── 3. Mark classes + walks as busy ──
+  for (const item of timeline) {
+    if (item.startAt && item.endAt && (item.kind === 'class' || item.kind === 'walk')) {
+      markBusy(item.startAt, item.endAt);
+    }
+  }
+
+  // ── 4. Meals: each gets a DIFFERENT restaurant ──
+  // Minimum 45 minutes between meals to prevent back-to-back eating
+  const MIN_MEAL_GAP_MINUTES = 45;
+  let lastMealEnd: Date | null = null;
+
+  const mealRecommendations = requestedMeals
+    .map((meal, mealIndex) => {
+      const config = MEAL_CONFIG[meal];
+      const windowStart = atTime(dateKey, config.windowStartHour, 0);
+      const windowEnd = atTime(dateKey, config.windowEndHour, 0);
+      const duration = config.durationMinutes;
+
+      let earliest = windowStart;
+      if (campusAvailableAt && campusAvailableAt > earliest) {
+        earliest = campusAvailableAt;
+      }
+      // Enforce minimum gap between meals
+      if (lastMealEnd) {
+        const gapEnd = addMinutes(lastMealEnd, MIN_MEAL_GAP_MINUTES);
+        if (gapEnd > earliest) earliest = gapEnd;
+      }
+
+      // For multiple snacks, append an index
+      const itemId = meal === 'snack' && mealIndex > 0 ? `food-snack-${mealIndex}` : `food-${meal}`;
+      const pinnedTime = pinnedTimes[itemId];
+
+      // Pinned times are immovable anchors — use them exactly, only warn on conflict
+      let mealTime: Date;
+      if (pinnedTime) {
+        mealTime = pinnedTime;
+        // Check for conflicts with busy intervals (classes, other pinned items)
+        const mealEnd = addMinutes(pinnedTime, duration);
+        const hasConflict = busyIntervals.some(
+          (interval) => pinnedTime < interval.end && mealEnd > interval.start
+        );
+        if (hasConflict) {
+          notes.push(`Pinned ${MEAL_CONFIG[meal].label.toLowerCase()} at ${formatPlannerTime(pinnedTime)} overlaps another event.`);
+        }
+      } else {
+        mealTime = findEarliestFreeSlot(earliest, duration, windowEnd);
+      }
+      const anchorBuildingId = getMealAnchorBuilding(sortedClasses, mealTime);
+
+      // Pick a food recommendation that hasn't been used yet
+      const candidates = FOOD_BUILDINGS
+        .map((buildingId) => {
+          const status = getBuildingStatus(statuses, buildingId);
+          if (!status || status.resources.food.length === 0) return null;
+          // Filter out already-used venues
+          const available = status.resources.food.filter((v) => !usedVenueNames.has(v.name));
+          if (available.length === 0) return null;
+          const bestVenue = [...available].sort((a, b) => a.value - b.value)[0];
+          const penalty = walkingMinutes(anchorBuildingId, buildingId) * 1.5;
+          return {
+            buildingId,
+            bestVenue,
+            buildingName: BUILDING_POINTS[buildingId].name,
+            score: bestVenue.value + penalty,
+            walkMinutes: walkingMinutes(anchorBuildingId, buildingId),
+          };
+        })
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+        .sort((a, b) => a.score - b.score);
+
+      const recommendation = candidates[0] ?? null;
+      if (!recommendation) return null;
+
+      usedVenueNames.add(recommendation.bestVenue.name);
+      markBusy(mealTime, addMinutes(mealTime, duration));
+      lastMealEnd = addMinutes(mealTime, duration);
+
+      return { meal, mealTime, recommendation, config, itemId };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+  for (const { meal, mealTime, recommendation, config, itemId } of mealRecommendations) {
     timeline.push({
-      id: `food-${meal}`,
+      id: itemId,
       time: formatPlannerTime(mealTime),
       title: `${config.label} at ${recommendation.bestVenue.name}`,
       detail: `${recommendation.bestVenue.displayValue} wait and about ${recommendation.walkMinutes} minutes away in ${recommendation.buildingName}.`,
@@ -799,10 +984,46 @@ export function buildPlannerResult({
       endAt: addMinutes(mealTime, config.durationMinutes),
       durationMinutes: config.durationMinutes,
     });
-  });
+  }
 
-  if (preferences.wantsGym && gymRecommendation && lastClass) {
-    const gymTime = addMinutes(lastClass.end, mealRecommendations.length > 0 ? 75 : 30);
+  // ── 5. Gym: placed in the best available slot, optimized for low capacity ──
+  if (preferences.wantsGym && gymRecommendation) {
+    const gymDuration = 60;
+    let gymEarliest = lastClass ? addMinutes(lastClass.end, 10) : atTime(dateKey, 10, 0);
+    if (campusAvailableAt && campusAvailableAt > gymEarliest) {
+      gymEarliest = campusAvailableAt;
+    }
+
+    const pinnedGymTime = pinnedTimes['gym-block'];
+    let gymTime: Date;
+
+    if (pinnedGymTime) {
+      gymTime = pinnedGymTime;
+      // Warn on conflict but respect the pin
+      const gymEnd = addMinutes(pinnedGymTime, gymDuration);
+      const hasConflict = busyIntervals.some(
+        (interval) => pinnedGymTime < interval.end && gymEnd > interval.start
+      );
+      if (hasConflict) {
+        notes.push(`Pinned gym time at ${formatPlannerTime(pinnedGymTime)} overlaps another event.`);
+      }
+    } else {
+      const candidates: Date[] = [];
+      const baseSlot = findEarliestFreeSlot(gymEarliest, gymDuration);
+      candidates.push(baseSlot);
+
+      for (const offset of [60, 120]) {
+        const candidate = findEarliestFreeSlot(addMinutes(baseSlot, offset), gymDuration);
+        if (candidate.getTime() !== baseSlot.getTime()) {
+          candidates.push(candidate);
+        }
+      }
+
+      gymTime = pickBestGymTime(statuses, candidates);
+    }
+
+    markBusy(gymTime, addMinutes(gymTime, gymDuration));
+
     timeline.push({
       id: 'gym-block',
       time: formatPlannerTime(gymTime),
@@ -810,11 +1031,12 @@ export function buildPlannerResult({
       detail: `${gymRecommendation.bestSpot.displayValue} occupancy right now in ${gymRecommendation.buildingName}.`,
       kind: 'gym',
       startAt: gymTime,
-      endAt: addMinutes(gymTime, 60),
-      durationMinutes: 60,
+      endAt: addMinutes(gymTime, gymDuration),
+      durationMinutes: gymDuration,
     });
   }
 
+  // ── 6. Campus events ──
   const eventRecommendation = preferences.wantsEvents
     ? getCampusEventRecommendation(campusEvents, dateKey, lastClass ? lastClass.end : null)
     : null;
@@ -840,6 +1062,77 @@ export function buildPlannerResult({
     notes.push('No same-day campus events were found after your classes, so the planner did not add one.');
   }
 
+  // ── 7. Study blocks: fill remaining free time ──
+  if (preferences.studyHours > 0) {
+    const totalStudyMinutes = preferences.studyHours * 60;
+    let remainingStudy = totalStudyMinutes;
+    const dayStart = atTime(dateKey, 8, 0);
+    const dayEnd = atTime(dateKey, 23, 59);
+    let studyBlockIndex = 0;
+
+    // Find all free gaps in the day after all other events
+    const allBusy = [...busyIntervals].sort((a, b) => a.start.getTime() - b.start.getTime());
+    let cursor = campusAvailableAt && campusAvailableAt > dayStart ? campusAvailableAt : dayStart;
+
+    for (const interval of allBusy) {
+      if (remainingStudy <= 0) break;
+      const gapStart = cursor;
+      const gapEnd = interval.start;
+      const gapMinutes = differenceInMinutes(gapEnd, gapStart);
+
+      if (gapMinutes >= 25) {
+        const blockMinutes = Math.min(gapMinutes - 5, remainingStudy, 120); // max 2h blocks
+        if (blockMinutes >= 25) {
+          const studyStart = gapStart;
+          const studyEnd = addMinutes(studyStart, blockMinutes);
+          timeline.push({
+            id: `study-${studyBlockIndex++}`,
+            time: formatPlannerTime(studyStart),
+            title: 'Study session',
+            detail: `${blockMinutes} min study block. Find a quiet spot on campus.`,
+            kind: 'study',
+            startAt: studyStart,
+            endAt: studyEnd,
+            durationMinutes: blockMinutes,
+          });
+          markBusy(studyStart, studyEnd);
+          remainingStudy -= blockMinutes;
+        }
+      }
+
+      cursor = interval.end.getTime() > cursor.getTime()
+        ? new Date(interval.end.getTime() + 5 * 60_000)
+        : new Date(cursor.getTime() + 5 * 60_000);
+    }
+
+    // After all busy intervals, fill tail gap
+    if (remainingStudy > 0 && cursor < dayEnd) {
+      const gapMinutes = differenceInMinutes(dayEnd, cursor);
+      const blockMinutes = Math.min(gapMinutes, remainingStudy, 120);
+      if (blockMinutes >= 25) {
+        const studyStart = cursor;
+        const studyEnd = addMinutes(studyStart, blockMinutes);
+        timeline.push({
+          id: `study-${studyBlockIndex++}`,
+          time: formatPlannerTime(studyStart),
+          title: 'Study session',
+          detail: `${blockMinutes} min study block. Find a quiet spot on campus.`,
+          kind: 'study',
+          startAt: studyStart,
+          endAt: studyEnd,
+          durationMinutes: blockMinutes,
+        });
+        markBusy(studyStart, studyEnd);
+        remainingStudy -= blockMinutes;
+      }
+    }
+
+    if (remainingStudy > 0 && totalStudyMinutes > remainingStudy) {
+      notes.push(`Could only fit ${Math.round((totalStudyMinutes - remainingStudy) / 60 * 10) / 10}h of study time today.`);
+    }
+  }
+
+  // ── 8. Fallback: no data at all ──
   if (timeline.length === 0) {
     timeline.push({
       id: 'note',
@@ -853,25 +1146,29 @@ export function buildPlannerResult({
     });
   }
 
+  // ── 9. Sort: commute first, then chronological, then by kind priority ──
   timeline.sort((a, b) => {
     if (a.time === 'Today') return 1;
     if (b.time === 'Today') return -1;
-    const toMinutes = (value: string) => {
-      const match = value.match(/(\d+):(\d+)\s?(AM|PM)/i);
-      if (!match) return 0;
-      let hour = Number(match[1]) % 12;
-      const minute = Number(match[2]);
-      if (match[3].toUpperCase() === 'PM') hour += 12;
-      return hour * 60 + minute;
+
+    const aTime = a.startAt?.getTime() ?? 0;
+    const bTime = b.startAt?.getTime() ?? 0;
+    if (aTime !== bTime) return aTime - bTime;
+
+    const kindPriority = (item: PlannerTimelineItem) => {
+      if (item.id === 'commute') return 0;
+      if (item.kind === 'class') return 1;
+      if (item.kind === 'walk') return 2;
+      return 3;
     };
-      return toMinutes(a.time) - toMinutes(b.time);
+    return kindPriority(a) - kindPriority(b);
   });
 
   return {
     summary: makeSummary(sortedClasses, preferences, {
       meals: mealRecommendations.map(({ meal, recommendation }) => ({ meal, recommendation })),
       gym: gymRecommendation,
-      event: eventRecommendation,
+      event: eventRecommendation ?? undefined,
     }),
     timeline,
     notes,
