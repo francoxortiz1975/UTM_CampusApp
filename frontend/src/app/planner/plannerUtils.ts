@@ -110,6 +110,31 @@ export const MEAL_CONFIG: Record<
   },
 };
 
+// Operating hours for gyms (indexed by JS weekday: 0=Sun..6=Sat)
+// Matches GYM_HOURS in reports.py
+const GYM_OPERATING_HOURS: Record<string, [number, number][]> = {
+  gyma:       [[10,17],[7,22],[7,22],[7,22],[7,22],[7,22],[10,17]],
+  gymb:       [[10,17],[7,22],[7,22],[7,22],[7,22],[7,22],[10,17]],
+  gymc:       [[10,17],[7,22],[7,22],[7,22],[7,22],[7,22],[10,17]],
+  weightroom: [[10,17],[7,22],[7,22],[7,22],[7,22],[7,22],[10,17]],
+  pool:       [[10,17],[7,22],[7,22],[7,22],[7,22],[7,22],[10,17]],
+};
+
+// Latest restaurant close hour per weekday (0=Sun..6=Sat)
+// Derived from FOOD_HOURS: latest close across all restaurants for each weekday
+const LATEST_FOOD_CLOSE: number[] = [0, 24, 24, 24, 24, 21, 0];
+
+function getGymCloseHour(dateKey: string): number {
+  const dayOfWeek = new Date(`${dateKey}T12:00:00`).getDay();
+  const hours = GYM_OPERATING_HOURS['gyma']?.[dayOfWeek];
+  return hours ? hours[1] : 22;
+}
+
+function getLatestFoodClose(dateKey: string): number {
+  const dayOfWeek = new Date(`${dateKey}T12:00:00`).getDay();
+  return LATEST_FOOD_CLOSE[dayOfWeek] ?? 21;
+}
+
 function pad(value: number) {
   return String(value).padStart(2, '0');
 }
@@ -939,6 +964,24 @@ export function buildPlannerResult({
       } else {
         mealTime = findEarliestFreeSlot(earliest, duration, windowEnd);
       }
+      // Clamp meal to when food venues are actually open
+      const foodCloseHour = getLatestFoodClose(dateKey);
+      const foodClose = atTime(dateKey, foodCloseHour, 0);
+      if (addMinutes(mealTime, duration) > foodClose) {
+        notes.push(`Could not schedule ${MEAL_CONFIG[meal].label.toLowerCase()} — restaurants are closed by then.`);
+        return null;
+      }
+      // Check if the meal slot is actually free (packed schedule check)
+      if (!pinnedTime) {
+        const mealEnd = addMinutes(mealTime, duration);
+        const overlaps = busyIntervals.some(
+          (interval) => mealTime < interval.end && mealEnd > interval.start
+        );
+        if (overlaps) {
+          notes.push(`Could not fit ${MEAL_CONFIG[meal].label.toLowerCase()} — not enough free time in the schedule.`);
+          return null;
+        }
+      }
       const anchorBuildingId = getMealAnchorBuilding(sortedClasses, mealTime);
 
       // Pick a food recommendation that hasn't been used yet
@@ -1022,18 +1065,50 @@ export function buildPlannerResult({
       gymTime = pickBestGymTime(statuses, candidates);
     }
 
-    markBusy(gymTime, addMinutes(gymTime, gymDuration));
+    // Ensure gym is within operating hours
+    const gymOpenHour = GYM_OPERATING_HOURS['gyma']?.[new Date(`${dateKey}T12:00:00`).getDay()]?.[0] ?? 7;
+    const gymCloseHour = getGymCloseHour(dateKey);
+    const gymOpen = atTime(dateKey, gymOpenHour, 0);
+    const gymClose = atTime(dateKey, gymCloseHour, 0);
+    if (gymTime < gymOpen) gymTime = gymOpen;
+    if (addMinutes(gymTime, gymDuration) > gymClose) {
+      gymTime = addMinutes(gymClose, -gymDuration);
+    }
 
-    timeline.push({
-      id: 'gym-block',
-      time: formatPlannerTime(gymTime),
-      title: `Workout at ${gymRecommendation.bestSpot.name}`,
-      detail: `${gymRecommendation.bestSpot.displayValue} occupancy right now in ${gymRecommendation.buildingName}.`,
-      kind: 'gym',
-      startAt: gymTime,
-      endAt: addMinutes(gymTime, gymDuration),
-      durationMinutes: gymDuration,
-    });
+    // Check if gym slot is actually free (packed schedule)
+    if (!pinnedGymTime) {
+      const gymEnd = addMinutes(gymTime, gymDuration);
+      const overlaps = busyIntervals.some(
+        (interval) => gymTime < interval.end && gymEnd > interval.start
+      );
+      if (overlaps || gymTime < gymOpen) {
+        notes.push('Could not fit a gym session — not enough free time in the schedule.');
+      } else {
+        markBusy(gymTime, gymEnd);
+        timeline.push({
+          id: 'gym-block',
+          time: formatPlannerTime(gymTime),
+          title: `Workout at ${gymRecommendation.bestSpot.name}`,
+          detail: `${gymRecommendation.bestSpot.displayValue} occupancy right now in ${gymRecommendation.buildingName}.`,
+          kind: 'gym',
+          startAt: gymTime,
+          endAt: gymEnd,
+          durationMinutes: gymDuration,
+        });
+      }
+    } else {
+      markBusy(gymTime, addMinutes(gymTime, gymDuration));
+      timeline.push({
+        id: 'gym-block',
+        time: formatPlannerTime(gymTime),
+        title: `Workout at ${gymRecommendation.bestSpot.name}`,
+        detail: `${gymRecommendation.bestSpot.displayValue} occupancy right now in ${gymRecommendation.buildingName}.`,
+        kind: 'gym',
+        startAt: gymTime,
+        endAt: addMinutes(gymTime, gymDuration),
+        durationMinutes: gymDuration,
+      });
+    }
   }
 
   // ── 6. Campus events ──
@@ -1081,7 +1156,7 @@ export function buildPlannerResult({
       const gapMinutes = differenceInMinutes(gapEnd, gapStart);
 
       if (gapMinutes >= 25) {
-        const blockMinutes = Math.min(gapMinutes - 5, remainingStudy, 120); // max 2h blocks
+        const blockMinutes = Math.min(gapMinutes - 5, remainingStudy);
         if (blockMinutes >= 25) {
           const studyStart = gapStart;
           const studyEnd = addMinutes(studyStart, blockMinutes);
@@ -1108,7 +1183,7 @@ export function buildPlannerResult({
     // After all busy intervals, fill tail gap
     if (remainingStudy > 0 && cursor < dayEnd) {
       const gapMinutes = differenceInMinutes(dayEnd, cursor);
-      const blockMinutes = Math.min(gapMinutes, remainingStudy, 120);
+      const blockMinutes = Math.min(gapMinutes, remainingStudy);
       if (blockMinutes >= 25) {
         const studyStart = cursor;
         const studyEnd = addMinutes(studyStart, blockMinutes);

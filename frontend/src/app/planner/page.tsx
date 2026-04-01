@@ -47,6 +47,26 @@ import {
   type PlannerTimelineItem,
 } from './plannerUtils';
 
+const PLANNER_STORAGE_KEY = 'utm-planner-state';
+
+type SavedPlannerState = {
+  preferences: PlannerPreferences;
+  customEvents: Array<{
+    id: string;
+    time: string;
+    title: string;
+    detail: string;
+    kind: PlannerTimelineItem['kind'];
+    startAt: string | null;
+    endAt: string | null;
+    durationMinutes: number;
+  }>;
+  pinnedTimes: Record<string, string>;
+  mealVenueOverrides: Record<string, string>;
+  selectedDate: string;
+  savedAt: string;
+};
+
 const initialPreferences: PlannerPreferences = {
   alreadyOnCampus: false,
   transportMode: 'drive',
@@ -76,14 +96,15 @@ function plannerDayTime(dateKey: string, hour: number, minute = 0) {
   return new Date(`${dateKey}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`);
 }
 
-function scheduleSlotItems(slot: PlannerFlexibleSlot, dateKey: string) {
+function scheduleSlotItems(slot: PlannerFlexibleSlot, dateKey: string, pinnedIds: Set<string>) {
   if (slot.items.length === 0) return [];
 
-  // Items with an explicit startAt from the user (custom events) keep their own times
-  const hasExplicitTime = (item: PlannerTimelineItem) => item.id.startsWith('custom-');
+  // Items with a pinned/explicit time keep their own times — never rescheduled
+  const isFixed = (item: PlannerTimelineItem) =>
+    item.id.startsWith('custom-') || pinnedIds.has(item.id) || item.id === 'commute';
 
   const gapMinutes = 10;
-  const schedulableItems = slot.items.filter((item) => !hasExplicitTime(item));
+  const schedulableItems = slot.items.filter((item) => !isFixed(item));
   const totalMinutes =
     schedulableItems.reduce((sum, item) => sum + item.durationMinutes, 0) +
     gapMinutes * Math.max(schedulableItems.length - 1, 0);
@@ -106,11 +127,31 @@ function scheduleSlotItems(slot: PlannerFlexibleSlot, dateKey: string) {
     cursor = schedulableItems[0]?.startAt ?? slot.items[0]?.startAt ?? plannerDayTime(dateKey, 9, 0);
   }
 
+  // Build a list of fixed-item time ranges to skip around
+  const fixedRanges = slot.items
+    .filter((item) => isFixed(item) && item.startAt && item.endAt)
+    .map((item) => ({ start: item.startAt!.getTime(), end: item.endAt!.getTime() }))
+    .sort((a, b) => a.start - b.start);
+
+  // Advance cursor past any fixed range it overlaps with
+  function advancePastFixed(c: Date): Date {
+    let t = c.getTime();
+    for (const range of fixedRanges) {
+      if (t >= range.start - gapMinutes * 60_000 && t < range.end + gapMinutes * 60_000) {
+        t = range.end + gapMinutes * 60_000;
+      }
+    }
+    return new Date(t);
+  }
+
   return slot.items.map((item) => {
-    // Custom events keep their explicit start/end times
-    if (hasExplicitTime(item)) {
+    // Fixed items keep their explicit start/end times
+    if (isFixed(item)) {
       return item;
     }
+
+    // Skip cursor past any fixed items
+    cursor = advancePastFixed(cursor);
 
     const startAt = new Date(cursor);
     const endAt = new Date(startAt.getTime() + item.durationMinutes * 60_000);
@@ -325,8 +366,83 @@ export default function PlannerPage() {
   const [customEvents, setCustomEvents] = useState<PlannerTimelineItem[]>([]);
   const [pinnedTimes, setPinnedTimes] = useState<Record<string, Date>>({});
   const [editingTimeItemId, setEditingTimeItemId] = useState<string | null>(null);
+  const [conflictPopup, setConflictPopup] = useState<string | null>(null);
 
   const hasCalendar = calendarSource !== 'empty' && calendarEvents.length > 0;
+
+  // Restore planner state from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PLANNER_STORAGE_KEY);
+      if (!raw) return;
+
+      const saved: SavedPlannerState = JSON.parse(raw);
+
+      // Only restore if saved today (stale plans from other days aren't useful)
+      const savedDate = new Date(saved.savedAt);
+      const now = new Date();
+      if (savedDate.toDateString() !== now.toDateString()) {
+        localStorage.removeItem(PLANNER_STORAGE_KEY);
+        return;
+      }
+
+      setPreferences(saved.preferences);
+      setSelectedDate(saved.selectedDate);
+      setMealVenueOverrides(saved.mealVenueOverrides);
+
+      if (saved.customEvents.length > 0) {
+        setCustomEvents(
+          saved.customEvents.map((e) => ({
+            ...e,
+            startAt: e.startAt ? new Date(e.startAt) : null,
+            endAt: e.endAt ? new Date(e.endAt) : null,
+          }))
+        );
+      }
+
+      if (Object.keys(saved.pinnedTimes).length > 0) {
+        setPinnedTimes(
+          Object.fromEntries(
+            Object.entries(saved.pinnedTimes).map(([k, v]) => [k, new Date(v)])
+          )
+        );
+      }
+    } catch {
+      // Corrupted data, ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save planner state to localStorage whenever key state changes
+  useEffect(() => {
+    if (!hasCalendar) return; // Don't save empty state
+
+    const state: SavedPlannerState = {
+      preferences,
+      customEvents: customEvents.map((e) => ({
+        id: e.id,
+        time: e.time,
+        title: e.title,
+        detail: e.detail,
+        kind: e.kind,
+        startAt: e.startAt?.toISOString() ?? null,
+        endAt: e.endAt?.toISOString() ?? null,
+        durationMinutes: e.durationMinutes,
+      })),
+      pinnedTimes: Object.fromEntries(
+        Object.entries(pinnedTimes).map(([k, v]) => [k, v.toISOString()])
+      ),
+      mealVenueOverrides,
+      selectedDate,
+      savedAt: new Date().toISOString(),
+    };
+
+    try {
+      localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // localStorage full or unavailable
+    }
+  }, [preferences, customEvents, pinnedTimes, mealVenueOverrides, selectedDate, hasCalendar]);
 
   useEffect(() => {
     let isMounted = true;
@@ -552,6 +668,14 @@ export default function PlannerPage() {
     if (!customEventTitle.trim()) return;
     const startAt = new Date(`${selectedDate}T${String(customEventHour).padStart(2, '0')}:${String(customEventMinute).padStart(2, '0')}:00`);
     const endAt = new Date(startAt.getTime() + customEventDuration * 60_000);
+
+    // Check for conflicts with classes, pinned events, and other custom events
+    const conflict = findTimeConflict(startAt, endAt);
+    if (conflict) {
+      setConflictPopup(`Cannot add event: ${conflict}`);
+      return;
+    }
+
     const newEvent: PlannerTimelineItem = {
       id: `custom-${Date.now()}`,
       time: formatPlannerTime(startAt),
@@ -610,9 +734,11 @@ export default function PlannerPage() {
     [statuses, classesForSelectedDate]
   );
 
+  const pinnedIds = useMemo(() => new Set(Object.keys(pinnedTimes)), [pinnedTimes]);
+
   const scheduledSlots = useMemo(
-    () => flexibleSlots.map((slot) => ({ ...slot, items: scheduleSlotItems(slot, selectedDate) })),
-    [flexibleSlots, selectedDate]
+    () => flexibleSlots.map((slot) => ({ ...slot, items: scheduleSlotItems(slot, selectedDate, pinnedIds) })),
+    [flexibleSlots, selectedDate, pinnedIds]
   );
 
   function isMealWindowPast(meal: PlannerMealType) {
@@ -646,8 +772,51 @@ export default function PlannerPage() {
     }));
   }
 
+  /** Check if a time range conflicts with any class, pinned/custom event, or is before campus arrival */
+  function findTimeConflict(start: Date, end: Date, excludeId?: string): string | null {
+    // Check if event is before campus arrival
+    if (!preferences.alreadyOnCampus && plannerResult) {
+      const commuteItem = plannerResult.timeline.find((t) => t.id === 'commute');
+      if (commuteItem?.endAt && start < commuteItem.endAt) {
+        return `You won't be on campus until ${formatPlannerTime(commuteItem.endAt)}. Schedule this after your arrival.`;
+      }
+    }
+    // Check against classes
+    for (const cls of classesForSelectedDate) {
+      if (start < cls.end && end > cls.start) {
+        return `This conflicts with "${cls.title}" (${formatPlannerTime(cls.start)}–${formatPlannerTime(cls.end)}).`;
+      }
+    }
+    // Check against custom events
+    for (const ce of customEvents) {
+      if (ce.id === excludeId) continue;
+      if (ce.startAt && ce.endAt && start < ce.endAt && end > ce.startAt) {
+        return `This conflicts with "${ce.title}" (${ce.time}).`;
+      }
+    }
+    // Check against pinned times
+    for (const [id, pinDate] of Object.entries(pinnedTimes)) {
+      if (id === excludeId) continue;
+      // Find the item to know its duration
+      const item = plannerResult?.timeline.find((t) => t.id === id);
+      if (!item) continue;
+      const pinEnd = new Date(pinDate.getTime() + item.durationMinutes * 60_000);
+      if (start < pinEnd && end > pinDate) {
+        return `This conflicts with pinned "${item.title}" (${formatPlannerTime(pinDate)}).`;
+      }
+    }
+    return null;
+  }
+
   function handleDropToSlot(toSlotId: string, targetIndex: number) {
     if (!draggedItem) return;
+
+    // Prevent dropping into "before-first" slot (before campus arrival)
+    if (toSlotId === 'before-first' && !preferences.alreadyOnCampus) {
+      setConflictPopup('You need to arrive on campus before scheduling activities. Pin your commute departure time instead.');
+      setDraggedItem(null);
+      return;
+    }
 
     setFlexibleSlots((prev) =>
       moveItemBetweenSlots(prev, draggedItem.fromSlotId, draggedItem.itemId, toSlotId, targetIndex)
@@ -715,7 +884,13 @@ export default function PlannerPage() {
                       const [h, m] = e.target.value.split(':').map(Number);
                       if (!isNaN(h) && !isNaN(m)) {
                         const pinned = new Date(`${selectedDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
-                        setPinnedTimes((prev) => ({ ...prev, [item.id]: pinned }));
+                        const pinnedEnd = new Date(pinned.getTime() + item.durationMinutes * 60_000);
+                        const conflict = findTimeConflict(pinned, pinnedEnd, item.id);
+                        if (conflict) {
+                          setConflictPopup(`Cannot pin to this time: ${conflict}`);
+                        } else {
+                          setPinnedTimes((prev) => ({ ...prev, [item.id]: pinned }));
+                        }
                       }
                       setEditingTimeItemId(null);
                     }}
@@ -807,6 +982,15 @@ export default function PlannerPage() {
                   onChange={(event) => {
                     const value = event.target.value;
                     setMealVenueOverrides((prev) => ({ ...prev, [item.id]: value }));
+                    // Update duration based on venue walk time + base eating time
+                    if (value) {
+                      const venue = allFoodVenues.find((v) => v.venueName === value);
+                      if (venue) {
+                        const baseMealMinutes = item.durationMinutes > 0 ? Math.max(20, item.durationMinutes - (allFoodVenues.find((v) => v.venueName === (mealVenueOverrides[item.id] ?? ''))?.walkMinutes ?? 0)) : 30;
+                        const newDuration = baseMealMinutes + venue.walkMinutes;
+                        handleDurationChange(item.id, newDuration);
+                      }
+                    }
                   }}
                   className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:ring-blue-950"
                 >
@@ -1362,7 +1546,7 @@ export default function PlannerPage() {
                         </p>
                         {slot.items.map((item, index) =>
                           renderTimelineCard(item, {
-                            draggable: item.kind !== 'class',
+                            draggable: item.kind !== 'class' && !item.id.startsWith('custom-') && !pinnedIds.has(item.id) && item.id !== 'commute',
                             slotId: slot.id,
                             onDropIndex: index,
                             showEditControls: item.kind !== 'class',
@@ -1392,10 +1576,10 @@ export default function PlannerPage() {
                           )}
                           {scheduledSlots[0].items.map((item, index) =>
                             renderTimelineCard(item, {
-                              draggable: true,
+                              draggable: !item.id.startsWith('custom-') && !pinnedIds.has(item.id) && item.id !== 'commute',
                               slotId: scheduledSlots[0].id,
                               onDropIndex: index,
-                              showEditControls: true,
+                              showEditControls: item.kind !== 'class' && item.id !== 'commute',
                             })
                           )}
                         </div>
@@ -1426,10 +1610,10 @@ export default function PlannerPage() {
                                 )}
                                 {slot.items.map((item, itemIndex) =>
                                   renderTimelineCard(item, {
-                                    draggable: true,
+                                    draggable: !item.id.startsWith('custom-') && !pinnedIds.has(item.id) && item.id !== 'commute',
                                     slotId: slot.id,
                                     onDropIndex: itemIndex,
-                                    showEditControls: true,
+                                    showEditControls: item.kind !== 'class' && item.id !== 'commute',
                                   })
                                 )}
                               </div>
@@ -1462,6 +1646,34 @@ export default function PlannerPage() {
           </section>
         </section>
       </main>
+
+      {/* Conflict popup */}
+      {conflictPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="mx-4 max-w-sm rounded-2xl border border-red-200 bg-white p-6 shadow-2xl dark:border-red-900/60 dark:bg-zinc-900">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-red-100 p-2 text-red-600 dark:bg-red-950/50 dark:text-red-300">
+                <X className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-zinc-100">
+                  Time conflict
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-zinc-300">
+                  {conflictPopup}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConflictPopup(null)}
+              className="mt-4 w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
