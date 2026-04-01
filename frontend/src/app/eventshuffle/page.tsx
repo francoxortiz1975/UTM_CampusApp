@@ -151,51 +151,51 @@ export default function EventShufflePage() {
   }, [monthDate]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#07070d] text-zinc-100">
-      <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 top-28 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-orange-400/20 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#07070d] dark:text-zinc-100">
+      <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-400/35 blur-3xl dark:bg-fuchsia-500/25" />
+      <div className="pointer-events-none absolute -right-24 top-28 h-80 w-80 rounded-full bg-cyan-400/30 blur-3xl dark:bg-cyan-400/20" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-orange-300/30 blur-3xl dark:bg-orange-400/20" />
       <Header backHref="/events" backLabel="← Events Calendar" />
 
       <main className="relative z-10 mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="bg-gradient-to-r from-fuchsia-300 via-cyan-300 to-orange-300 bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">Event Shuffle</h1>
-            <p className="mt-1 text-sm text-zinc-400">Random event discovery in a dark card flow.</p>
+            <h1 className="bg-gradient-to-r from-fuchsia-600 via-cyan-600 to-orange-500 bg-clip-text text-3xl font-extrabold text-transparent dark:from-fuchsia-300 dark:via-cyan-300 dark:to-orange-300 sm:text-4xl">Event Shuffle</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">Random event discovery in a dark card flow.</p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-zinc-200 backdrop-blur hover:bg-white/10">←</button>
-            <span className="min-w-36 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center text-sm font-semibold text-zinc-100 backdrop-blur">{monthLabel}</span>
-            <button onClick={nextMonth} className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-zinc-200 backdrop-blur hover:bg-white/10">→</button>
+            <button onClick={prevMonth} className="rounded-xl border border-slate-300 bg-white/75 px-3 py-2 text-sm text-slate-700 backdrop-blur hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10">←</button>
+            <span className="min-w-36 rounded-xl border border-slate-300 bg-white/75 px-3 py-2 text-center text-sm font-semibold text-slate-800 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-100">{monthLabel}</span>
+            <button onClick={nextMonth} className="rounded-xl border border-slate-300 bg-white/75 px-3 py-2 text-sm text-slate-700 backdrop-blur hover:bg-white dark:border-white/15 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10">→</button>
           </div>
         </div>
 
         <section className="grid gap-6 md:grid-cols-[1fr_320px]">
-          <div className="rounded-3xl border border-white/10 bg-zinc-900/60 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6">
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-[0_16px_45px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/60 dark:shadow-[0_20px_60px_rgba(0,0,0,0.45)] sm:p-6">
             {loading ? (
-              <p className="py-20 text-center text-zinc-400">Loading events...</p>
+              <p className="py-20 text-center text-slate-500 dark:text-zinc-400">Loading events...</p>
             ) : currentEvent ? (
               <>
-                <article className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#17182a] via-[#0f1020] to-[#0b0c15] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:p-6">
+                <article className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-white/10 dark:bg-gradient-to-br dark:from-[#17182a] dark:via-[#0f1020] dark:to-[#0b0c15] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] sm:p-6">
                   <div className="mb-3 inline-block rounded-full bg-gradient-to-r from-fuchsia-500/80 to-cyan-500/80 px-3 py-1 text-xs font-semibold text-white">
                     {currentEvent.club}
                   </div>
 
-                  <h2 className="mb-3 text-2xl font-bold text-zinc-50 sm:text-3xl">{currentEvent.title}</h2>
+                  <h2 className="mb-3 text-2xl font-bold text-slate-900 dark:text-zinc-50 sm:text-3xl">{currentEvent.title}</h2>
 
-                  <div className="space-y-2 text-sm text-zinc-300">
+                  <div className="space-y-2 text-sm text-slate-700 dark:text-zinc-300">
                     <p>
-                      <span className="font-semibold text-zinc-100">Date:</span> {formatDate(currentEvent.date)}
+                      <span className="font-semibold text-slate-900 dark:text-zinc-100">Date:</span> {formatDate(currentEvent.date)}
                     </p>
                     <p>
-                      <span className="font-semibold text-zinc-100">Time:</span> {formatTime(currentEvent.startTime)} - {formatTime(currentEvent.endTime)}
+                      <span className="font-semibold text-slate-900 dark:text-zinc-100">Time:</span> {formatTime(currentEvent.startTime)} - {formatTime(currentEvent.endTime)}
                     </p>
                     <p>
-                      <span className="font-semibold text-zinc-100">Location:</span> {currentEvent.location || "TBA"}
+                      <span className="font-semibold text-slate-900 dark:text-zinc-100">Location:</span> {currentEvent.location || "TBA"}
                     </p>
                     {currentEvent.description && (
-                      <p className="pt-3 leading-relaxed text-zinc-400">{currentEvent.description}</p>
+                      <p className="pt-3 leading-relaxed text-slate-600 dark:text-zinc-400">{currentEvent.description}</p>
                     )}
                   </div>
                 </article>
@@ -217,7 +217,7 @@ export default function EventShufflePage() {
               </>
             ) : (
               <div className="py-12 text-center">
-                <p className="mb-4 text-zinc-400">No more events in this month deck.</p>
+                <p className="mb-4 text-slate-600 dark:text-zinc-400">No more events in this month deck.</p>
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={resetDeck}
@@ -231,20 +231,20 @@ export default function EventShufflePage() {
             )}
           </div>
 
-          <aside className="h-fit rounded-3xl border border-white/10 bg-zinc-900/60 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
-            <h3 className="mb-4 text-lg font-semibold text-zinc-100">Confirmed Events</h3>
+          <aside className="h-fit rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-900/60 dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] sm:p-6">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-zinc-100">Confirmed Events</h3>
             {confirmedEvents.length === 0 ? (
-              <p className="text-sm text-zinc-400">Your confirmed events will appear here after pressing Yes.</p>
+              <p className="text-sm text-slate-600 dark:text-zinc-400">Your confirmed events will appear here after pressing Yes.</p>
             ) : (
               <div className="space-y-3">
                 {confirmedEvents.map((event) => (
                   <button
                     key={event.id}
                     onClick={() => setSelectedConfirmedEvent(event)}
-                    className="w-full rounded-2xl border border-white/10 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 p-3 text-left transition hover:from-emerald-500/30 hover:to-cyan-500/30"
+                    className="w-full rounded-2xl border border-slate-200 bg-gradient-to-r from-emerald-100 to-cyan-100 p-3 text-left transition hover:from-emerald-200 hover:to-cyan-200 dark:border-white/10 dark:from-emerald-500/20 dark:to-cyan-500/20 dark:hover:from-emerald-500/30 dark:hover:to-cyan-500/30"
                   >
-                    <p className="font-semibold text-emerald-100">{event.title}</p>
-                    <p className="mt-1 text-xs text-emerald-300">{event.club}</p>
+                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">{event.title}</p>
+                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{event.club}</p>
                   </button>
                 ))}
               </div>
@@ -255,28 +255,28 @@ export default function EventShufflePage() {
 
       {selectedConfirmedEvent && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm dark:bg-black/65"
           onClick={() => setSelectedConfirmedEvent(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-[#17182a] to-[#0e1020] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
+            className="w-full max-w-md rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-100 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.22)] dark:border-white/10 dark:bg-gradient-to-br dark:from-[#17182a] dark:to-[#0e1020] dark:shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold text-zinc-50">{selectedConfirmedEvent.title}</h2>
-            <p className="mt-1 text-sm text-cyan-300">{selectedConfirmedEvent.club}</p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-50">{selectedConfirmedEvent.title}</h2>
+            <p className="mt-1 text-sm text-cyan-700 dark:text-cyan-300">{selectedConfirmedEvent.club}</p>
 
-            <div className="mt-4 space-y-2 text-sm text-zinc-300">
+            <div className="mt-4 space-y-2 text-sm text-slate-700 dark:text-zinc-300">
               <p>
-                <span className="font-semibold text-zinc-100">Date:</span> {formatDate(selectedConfirmedEvent.date)}
+                <span className="font-semibold text-slate-900 dark:text-zinc-100">Date:</span> {formatDate(selectedConfirmedEvent.date)}
               </p>
               <p>
-                <span className="font-semibold text-zinc-100">Time:</span> {formatTime(selectedConfirmedEvent.startTime)} - {formatTime(selectedConfirmedEvent.endTime)}
+                <span className="font-semibold text-slate-900 dark:text-zinc-100">Time:</span> {formatTime(selectedConfirmedEvent.startTime)} - {formatTime(selectedConfirmedEvent.endTime)}
               </p>
               <p>
-                <span className="font-semibold text-zinc-100">Location:</span> {selectedConfirmedEvent.location || "TBA"}
+                <span className="font-semibold text-slate-900 dark:text-zinc-100">Location:</span> {selectedConfirmedEvent.location || "TBA"}
               </p>
               {selectedConfirmedEvent.description && (
-                <p className="pt-2 leading-relaxed text-zinc-400">{selectedConfirmedEvent.description}</p>
+                <p className="pt-2 leading-relaxed text-slate-600 dark:text-zinc-400">{selectedConfirmedEvent.description}</p>
               )}
             </div>
 
