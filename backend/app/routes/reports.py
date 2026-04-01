@@ -257,10 +257,10 @@ def create_report():
     status = StatusReport(report.to_dict(), StatusCode.CREATED)
     return status.json(), status.code()
 
-@reports_bp.route("/bluetoothscanner/", methods=["POST"], strict_slashes=False)
+@reports_bp.route("/scanner/", methods=["POST"], strict_slashes=False)
 def create_bluetooth_report():
     """
-    POST /reports/bluetoothscanner/
+    POST /reports/scanner/
     Body: { "title": "...", "content": "..." }
     """
     data = request.json or {}
@@ -276,7 +276,7 @@ def create_bluetooth_report():
         status = StatusReport("title is required", StatusCode.BAD_REQUEST)
         return status.json(), status.code()
 
-    report = BluetoothReport(id=device_id, title=title, content=content)
+    report = ScannerReport(id=device_id, title=title, content=content)
     report.save()
 
     status = StatusReport(report.to_dict(), StatusCode.CREATED)
