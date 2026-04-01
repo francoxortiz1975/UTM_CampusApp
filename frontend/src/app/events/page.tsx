@@ -250,12 +250,18 @@ export default function EventsPage() {
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
 
+      <div className="relative z-10 mx-auto max-w-5xl px-6 pt-8">
+        <h1 className="font-display text-3xl font-bold leading-[1.28] text-slate-900 dark:text-white">
+          Event Calendar
+        </h1>
+      </div>
+
       <div className="relative z-10 flex w-full pt-6 px-6 gap-6">
         {/* Sidebar */}
         <aside className="w-64 bg-white dark:bg-zinc-900 p-6 shadow rounded-xl space-y-4 h-fit border border-transparent dark:border-zinc-800 shrink-0">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
+            className="w-full rounded-lg border border-blue-200/50 bg-blue-300/15 py-2 font-medium text-blue-950 backdrop-blur-sm transition-all hover:border-blue-200/70 hover:bg-blue-300/25 dark:border-blue-200/30 dark:bg-blue-300/10 dark:text-white dark:hover:bg-blue-300/20"
           >
             + Request Event
           </button>
@@ -263,7 +269,7 @@ export default function EventsPage() {
           {currentUserId !== null && admins.includes(currentUserId) && (
             <button
               onClick={() => setReviewPending(prev => !prev)}
-              className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600"
+              className="w-full rounded-lg border border-amber-200/50 bg-amber-300/15 py-2 font-medium text-amber-950 backdrop-blur-sm transition-all hover:border-amber-200/70 hover:bg-amber-300/25 dark:border-amber-200/30 dark:bg-amber-300/10 dark:text-white dark:hover:bg-amber-300/20"
             >
               Review Pending
             </button>
@@ -288,7 +294,7 @@ export default function EventsPage() {
 
           <Link
             href="/eventshuffle"
-            className="block w-full text-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-2 rounded-lg hover:bg-black dark:hover:bg-white"
+            className="block w-full rounded-lg border border-slate-300/70 bg-slate-200/70 py-2 text-center font-medium text-slate-800 backdrop-blur-sm transition-all hover:border-slate-400/80 hover:bg-slate-200/90 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
           >
             Open Event Shuffle
           </Link>

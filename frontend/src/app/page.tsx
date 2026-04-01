@@ -72,9 +72,9 @@ const apps = [
         href: '/planner',
         icon: Sparkles,
         titleGradient:
-            'group-hover:bg-gradient-to-r group-hover:from-cyan-500 group-hover:to-blue-500',
+            'group-hover:bg-gradient-to-r group-hover:from-amber-400 group-hover:to-yellow-500',
         accent:
-            'bg-slate-200/80 text-slate-700 ring-slate-300/80 dark:bg-white/10 dark:text-zinc-200 dark:ring-white/15 group-hover:bg-gradient-to-br group-hover:from-cyan-400 group-hover:to-blue-500 group-hover:text-white group-hover:ring-transparent',
+            'bg-slate-200/80 text-amber-900 ring-slate-300/80 dark:bg-white/10 dark:text-amber-200 dark:ring-white/15 group-hover:bg-gradient-to-br group-hover:from-amber-400 group-hover:to-yellow-500 group-hover:text-white group-hover:ring-transparent',
     },
 ] as const;
 
@@ -178,7 +178,12 @@ export default function Home() {
 
     const mapApp = apps.find((app) => app.href === '/map');
     const foodApp = apps.find((app) => app.href === '/food');
+    const plannerApp = apps.find((app) => app.href === '/planner');
+    const eventApp = apps.find((app) => app.href === '/events');
     const bottomApps = apps.filter((app) => app.href !== '/map' && app.href !== '/food');
+    const lowerApps = apps.filter(
+        (app) => app.href !== '/map' && app.href !== '/food' && app.href !== '/planner' && app.href !== '/events'
+    );
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0b0c10] dark:text-zinc-100">
@@ -293,8 +298,52 @@ export default function Home() {
                         )}
                     </div>
 
-                    <ul className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                        {bottomApps.map((app) => {
+                    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                        {plannerApp && (
+                            <Link
+                                href={plannerApp.href}
+                                className="group rounded-3xl border border-slate-200/90 bg-white/65 p-6 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-amber-300/55 hover:shadow-[0_20px_50px_rgba(180,83,9,0.18)] dark:border-white/10 dark:bg-zinc-900/50 dark:hover:border-amber-400/35 dark:hover:shadow-[0_20px_50px_rgba(245,158,11,0.15)]"
+                            >
+                                <span className={`inline-flex size-11 items-center justify-center rounded-xl ring-1 shadow-sm ${plannerApp.accent}`}>
+                                    <Sparkles className="size-5" strokeWidth={2} />
+                                </span>
+                                <h3 className={`font-display mt-4 text-xl leading-[1.35] text-slate-900 transition-all group-hover:bg-clip-text group-hover:text-transparent dark:text-zinc-100 ${plannerApp.titleGradient}`}>
+                                    {plannerApp.name}
+                                </h3>
+                                <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
+                                    {plannerApp.description}
+                                </p>
+                                <span className="mt-5 inline-flex items-center text-sm font-semibold text-slate-600 transition-colors group-hover:text-amber-700 dark:text-zinc-400 dark:group-hover:text-amber-300">
+                                    Open Planner
+                                    <span className="ml-1">→</span>
+                                </span>
+                            </Link>
+                        )}
+
+                        {eventApp && (
+                            <Link
+                                href={eventApp.href}
+                                className="group rounded-3xl border border-slate-200/90 bg-white/65 p-6 shadow-[0_14px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-cyan-300/55 hover:shadow-[0_20px_50px_rgba(14,116,144,0.18)] dark:border-white/10 dark:bg-zinc-900/50 dark:hover:border-cyan-400/35 dark:hover:shadow-[0_20px_50px_rgba(20,184,166,0.15)]"
+                            >
+                                <span className={`inline-flex size-11 items-center justify-center rounded-xl ring-1 shadow-sm ${eventApp.accent}`}>
+                                    <CalendarDays className="size-5" strokeWidth={2} />
+                                </span>
+                                <h3 className={`font-display mt-4 text-xl leading-[1.35] text-slate-900 transition-all group-hover:bg-clip-text group-hover:text-transparent dark:text-zinc-100 ${eventApp.titleGradient}`}>
+                                    {eventApp.name}
+                                </h3>
+                                <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
+                                    {eventApp.description}
+                                </p>
+                                <span className="mt-5 inline-flex items-center text-sm font-semibold text-slate-600 transition-colors group-hover:text-cyan-700 dark:text-zinc-400 dark:group-hover:text-cyan-300">
+                                    Open Calendar
+                                    <span className="ml-1">→</span>
+                                </span>
+                            </Link>
+                        )}
+                    </div>
+
+                    <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        {lowerApps.map((app) => {
                             const Icon = app.icon;
                             return (
                                 <li key={app.name} className="min-w-0">

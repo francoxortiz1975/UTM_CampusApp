@@ -3026,10 +3026,10 @@ export default function PlannerPage() {
         {/* Page header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-cyan-600 dark:text-cyan-300">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-amber-300">
               Planner assistant
             </p>
-            <h1 className="font-display mt-2 pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="font-display mt-2 pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent">
               Build a campus day around your classes
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-zinc-300">
@@ -3039,7 +3039,7 @@ export default function PlannerPage() {
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50/80 px-4 py-2 text-sm font-medium text-cyan-700 dark:border-cyan-900/60 dark:bg-cyan-950/40 dark:text-cyan-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50/80 px-4 py-2 text-sm font-medium text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
             {isRefreshing ? <LoaderCircle className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
             {isRefreshing ? 'Refreshing campus conditions' : 'Rule-based planner with live campus data'}
           </div>

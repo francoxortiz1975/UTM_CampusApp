@@ -65,7 +65,7 @@ export default function SignIn() {
                         {/* Submit button */}
                         <button
                             type="submit"
-                            className="w-full rounded-lg bg-blue-600 py-2 font-medium text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                            className="w-full rounded-lg border border-blue-200/45 bg-blue-300/15 py-2 font-medium text-blue-950 backdrop-blur-sm transition-all hover:border-blue-200/70 hover:bg-blue-300/25 dark:border-blue-200/30 dark:bg-blue-300/10 dark:text-white dark:hover:bg-blue-300/20"
                         >
                             Sign In
                         </button>
@@ -73,7 +73,7 @@ export default function SignIn() {
                     {/* Link to sign up page */}
                     <p className="mt-4 text-center text-black dark:text-zinc-200">
                         Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                        <Link href="/signup" className="font-medium text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200">
                             Create one
                         </Link>
                     </p>
