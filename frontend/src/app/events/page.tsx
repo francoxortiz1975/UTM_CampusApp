@@ -81,11 +81,11 @@ export default function EventsPage() {
 
   const getClubColor = (club: string) => {
     const colors: { [key: string]: string } = {
-      'CS Club': 'bg-blue-100 text-blue-800',
-      'Tech Society': 'bg-purple-100 text-purple-800',
-      'Math Society': 'bg-green-100 text-green-800',
+      'CS Club': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      'Tech Society': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      'Math Society': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
     };
-    return colors[club] || 'bg-gray-100 text-gray-800';
+    return colors[club] || 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-300';
   };
 
   // ---------------- Fetch Current User ----------------
@@ -216,14 +216,14 @@ export default function EventsPage() {
 
   // ---------------- Render Days ----------------
   const days = [];
-  for (let i = 0; i < startingDayOfWeek; i++) days.push(<div key={`empty-${i}`} className="min-h-24 bg-gray-50" />);
+  for (let i = 0; i < startingDayOfWeek; i++) days.push(<div key={`empty-${i}`} className="min-h-24 bg-gray-50 dark:bg-zinc-950/50" />);
   for (let day = 1; day <= daysInMonth; day++) {
     const dayEvents = getEventsForDay(day);
     days.push(
-      <div key={day} className="min-h-24 border bg-white p-2">
-        <div className="font-semibold">{day}</div>
+      <div key={day} className="min-h-24 border dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2">
+        <div className="font-semibold text-gray-900 dark:text-zinc-100">{day}</div>
         {dayEvents.map(event => (
-          <div key={event.id} className={`text-xs p-1 rounded cursor-pointer ${getClubColor(event.club)}`} onClick={() => setSelectedEvent(event)}>
+          <div key={event.id} className={`text-xs p-1 mt-1 rounded cursor-pointer ${getClubColor(event.club)}`} onClick={() => setSelectedEvent(event)}>
             {formatTime(event.startTime)} {event.title}
           </div>
         ))}
@@ -243,12 +243,12 @@ export default function EventsPage() {
 
   // ---------------- Render ----------------
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
       <Header />
 
-      <div className="flex">
+      <div className="flex w-full pt-6 px-6 gap-6">
         {/* Sidebar */}
-        <aside className="w-64 bg-white p-6 shadow space-y-4">
+        <aside className="w-64 bg-white dark:bg-zinc-900 p-6 shadow rounded-xl space-y-4 h-fit border border-transparent dark:border-zinc-800 shrink-0">
           <button
             onClick={() => setShowCreateModal(true)}
             className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
@@ -269,47 +269,61 @@ export default function EventsPage() {
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full border p-2"
+            className="w-full border p-2 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
 
-          <label className="flex items-center gap-2 mt-2">
-            <input type="checkbox" checked={showPastEvents} onChange={(e) => setShowPastEvents(e.target.checked)} />
-            Show Past
+          <label className="flex items-center gap-2 mt-2 cursor-pointer">
+            <input type="checkbox" checked={showPastEvents} onChange={(e) => setShowPastEvents(e.target.checked)} className="rounded dark:bg-zinc-900 dark:border-zinc-700" />
+            <span>Show Past</span>
           </label>
 
-          <select value={selectedClub} onChange={(e) => setSelectedClub(e.target.value)} className="w-full mt-2 border p-2">
+          <select value={selectedClub} onChange={(e) => setSelectedClub(e.target.value)} className="w-full mt-2 border p-2 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="all">All Clubs</option>
             {allClubs.map(club => <option key={club}>{club}</option>)}
           </select>
         </aside>
 
         {/* Main */}
-        <main className="flex-1 p-6 space-y-6">
+        <main className="flex-1 space-y-6 min-w-0">
           {!reviewPending ? (
-            <div className="bg-white p-6 shadow rounded">
-              <div className="flex justify-between mb-4">
-                <button onClick={prevMonth}>←</button>
-                <h2>{monthName}</h2>
-                <button onClick={nextMonth}>→</button>
+            <div className="bg-white dark:bg-zinc-900 p-6 shadow rounded-xl border border-transparent dark:border-zinc-800">
+              <div className="flex justify-between items-center mb-6">
+                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">←</button>
+                <h2 className="text-xl font-bold">{monthName}</h2>
+                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">→</button>
               </div>
 
-              {loading ? <p>Loading events...</p> : <div className="grid grid-cols-7">{days}</div>}
+              {loading ? (
+                <p className="text-center py-10 text-gray-500 dark:text-zinc-400">Loading events...</p>
+              ) : (
+                <div className="grid grid-cols-7 border-l border-t dark:border-zinc-800 rounded overflow-hidden">
+                  {/* Day Headers */}
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="text-center py-2 text-sm font-semibold bg-gray-50 dark:bg-zinc-950/50 border-r border-b dark:border-zinc-800">
+                      {day}
+                    </div>
+                  ))}
+                  {days}
+                </div>
+              )}
             </div>
           ) : (
             // ---------------- Pending Events for Admin ----------------
-            <div className="bg-white p-6 shadow rounded space-y-4">
+            <div className="bg-white dark:bg-zinc-900 p-6 shadow rounded-xl space-y-4 border border-transparent dark:border-zinc-800">
               <h2 className="text-xl font-bold mb-4">Pending Event Requests</h2>
-              {pendingEvents.length === 0 ? <p>No pending events.</p> : pendingEvents.map(event => (
-                <div key={event.id} className="border p-4 rounded space-y-2">
-                  <h3 className="font-semibold">{event.title}</h3>
-                  <p>Club: {event.club}</p>
-                  <p>Date: {formatDate(event.date)}</p>
-                  <p>Time: {formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
-                  <p>Location: {event.location}</p>
-                  <p>Description: {event.description}</p>
-                  <div className="flex gap-2">
-                    <button onClick={() => acceptEvent(event.id)} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Accept</button>
-                    <button onClick={() => declineEvent(event.id)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Decline</button>
+              {pendingEvents.length === 0 ? (
+                <p className="text-gray-500 dark:text-zinc-400">No pending events.</p>
+              ) : pendingEvents.map(event => (
+                <div key={event.id} className="border dark:border-zinc-700 p-4 rounded-lg space-y-2 bg-gray-50 dark:bg-zinc-950/30">
+                  <h3 className="font-semibold text-lg">{event.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">Club: <span className="text-gray-900 dark:text-zinc-200">{event.club}</span></p>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">Date: <span className="text-gray-900 dark:text-zinc-200">{formatDate(event.date)}</span></p>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">Time: <span className="text-gray-900 dark:text-zinc-200">{formatTime(event.startTime)} - {formatTime(event.endTime)}</span></p>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">Location: <span className="text-gray-900 dark:text-zinc-200">{event.location}</span></p>
+                  <p className="text-sm text-gray-600 dark:text-zinc-400">Description: <span className="text-gray-900 dark:text-zinc-200">{event.description}</span></p>
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => acceptEvent(event.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Accept</button>
+                    <button onClick={() => declineEvent(event.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Decline</button>
                   </div>
                 </div>
               ))}
@@ -321,21 +335,21 @@ export default function EventsPage() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-end p-6 z-50"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center sm:justify-end items-center sm:items-stretch p-4 sm:p-6 z-50"
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white w-96 rounded-2xl shadow-xl p-6 space-y-4 border"
+            className="bg-white dark:bg-zinc-900 w-full sm:w-96 rounded-2xl shadow-xl p-6 space-y-4 border border-transparent dark:border-zinc-700 h-fit sm:h-auto overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex justify-between items-start">
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-zinc-100">
                 {selectedEvent.title}
               </h2>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="text-gray-400 hover:text-gray-600 text-lg"
+                className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 text-lg"
               >
                 ✕
               </button>
@@ -353,18 +367,18 @@ export default function EventsPage() {
             </div>
 
             {/* Details */}
-            <div className="space-y-3 text-sm text-gray-700">
+            <div className="space-y-3 text-sm text-gray-700 dark:text-zinc-300">
               <div className="flex items-center gap-2">
                 <span>📅</span>
                 <span>
-                  <strong>Date:</strong> {formatDate(selectedEvent.date)}
+                  <strong className="text-gray-900 dark:text-zinc-100">Date:</strong> {formatDate(selectedEvent.date)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
                 <span>⏰</span>
                 <span>
-                  <strong>Time:</strong>{" "}
+                  <strong className="text-gray-900 dark:text-zinc-100">Time:</strong>{" "}
                   {formatTime(selectedEvent.startTime)} –{" "}
                   {formatTime(selectedEvent.endTime)}
                 </span>
@@ -374,23 +388,23 @@ export default function EventsPage() {
                 <div className="flex items-center gap-2">
                   <span>📍</span>
                   <span>
-                    <strong>Location:</strong> {selectedEvent.location}
+                    <strong className="text-gray-900 dark:text-zinc-100">Location:</strong> {selectedEvent.location}
                   </span>
                 </div>
               )}
 
               {selectedEvent.description && (
-                <div className="pt-2 border-t">
-                  <p className="text-gray-500 text-xs mb-1">Description</p>
-                  <p className="text-gray-700 leading-relaxed">
+                <div className="pt-3 border-t dark:border-zinc-700">
+                  <p className="text-gray-500 dark:text-zinc-400 text-xs mb-1">Description</p>
+                  <p className="leading-relaxed">
                     {selectedEvent.description}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Footer Action (optional but nice) */}
-            <div className="pt-3 border-t flex justify-end">
+            {/* Footer Action */}
+            <div className="pt-4 border-t dark:border-zinc-700 flex justify-end">
               <button
                 onClick={() => setSelectedEvent(null)}
                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
@@ -404,18 +418,22 @@ export default function EventsPage() {
 
       {/* Create Event Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold">Request New Event</h2>
-            <input name="name" placeholder="Event Name" value={formData.name} onChange={handleChange} className="w-full border p-2 rounded" />
-            <input name="org" placeholder="Club" value={formData.org} onChange={handleChange} className="w-full border p-2 rounded" />
-            <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full border p-2 rounded" />
-            <input type="time" name="time" value={formData.time} onChange={handleChange} className="w-full border p-2 rounded" />
-            <input name="location" placeholder="Location" value={formData.location} onChange={handleChange} className="w-full border p-2 rounded" />
-            <textarea name="desc" placeholder="Description" value={formData.desc} onChange={handleChange} className="w-full border p-2 rounded" />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowCreateModal(false)} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-              <button onClick={createEvent} className="bg-indigo-600 text-white px-4 py-2 rounded">Submit</button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl border border-transparent dark:border-zinc-800" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold dark:text-zinc-100">Request New Event</h2>
+            
+            <div className="space-y-3">
+              <input name="name" placeholder="Event Name" value={formData.name} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input name="org" placeholder="Club" value={formData.org} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 color-scheme-light dark:[color-scheme:dark]" />
+              <input type="time" name="time" value={formData.time} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 color-scheme-light dark:[color-scheme:dark]" />
+              <input name="location" placeholder="Location" value={formData.location} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <textarea name="desc" placeholder="Description" rows={3} value={formData.desc} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={() => setShowCreateModal(false)} className="bg-gray-200 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 px-5 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-700">Cancel</button>
+              <button onClick={createEvent} className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700">Submit</button>
             </div>
           </div>
         </div>
