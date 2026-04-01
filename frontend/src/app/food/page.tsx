@@ -457,6 +457,12 @@ const apiBase =
     : 'http://localhost:5001';
 const FOOD_OVERRIDES_KEY = 'placeholder:foodWaitOverrides';
 
+function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 function buildFoodTrendData(current: number): { time: string; wait: number }[] {
   const cap = (value: number) => Math.max(0, Math.min(60, value));
   const anchors = [
@@ -500,7 +506,7 @@ function FoodCard({
     }
 
     try {
-      const result = await fetch(`${apiBase}/reports/`, {
+      const result = await fetchWithTimeout(`${apiBase}/reports/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -671,7 +677,7 @@ async function getReport(res_id: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${res_id}`);
+    const res = await fetchWithTimeout(`${apiBase}/reports/${month}/${weekday}/${time}/food/${res_id}`);
     if (!res.ok) return 10;
 
     const payload = await res.json();
@@ -687,7 +693,7 @@ async function getFullDayReport(location: string): Promise<{ time: string; capac
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/food/${location}`);
+    const res = await fetchWithTimeout(`${apiBase}/reports/${month}/${weekday}/food/${location}`);
 
     const payload = await res.json();
     return payload;

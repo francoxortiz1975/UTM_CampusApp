@@ -38,6 +38,13 @@ function getTimeContext() {
     };
 }
 
+/** Fetch with a timeout — returns the response or throws on timeout */
+function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<Response> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 function roundValue(value: number) {
     return Math.max(0, Math.round(value));
 }
@@ -71,11 +78,13 @@ function averageScore(resources: MapResourceSnapshot[]) {
     return resources.reduce((sum, resource) => sum + resource.score, 0) / resources.length;
 }
 
-async function fetchFoodEstimate(resource: MapResourceConfig): Promise<MapResourceSnapshot> {
-    const { month, weekday, hour } = getTimeContext();
+async function fetchFoodEstimate(resource: MapResourceConfig, overrideHour?: number): Promise<MapResourceSnapshot> {
+    const ctx = getTimeContext();
+    const hour = overrideHour ?? ctx.hour;
+    const { month, weekday } = ctx;
 
     try {
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `${apiBase}/reports/${month}/${weekday}/${hour}/food/${resource.id}`
         );
 
@@ -106,12 +115,15 @@ async function fetchFoodEstimate(resource: MapResourceConfig): Promise<MapResour
 }
 
 async function fetchCapacityEstimate(
-    resource: MapResourceConfig
+    resource: MapResourceConfig,
+    overrideHour?: number
 ): Promise<MapResourceSnapshot> {
-    const { month, weekday, hour } = getTimeContext();
+    const ctx = getTimeContext();
+    const hour = overrideHour ?? ctx.hour;
+    const { month, weekday } = ctx;
 
     try {
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `${apiBase}/reports/${month}/${weekday}/${hour}/${resource.kind}/${resource.id}`
         );
 
@@ -141,12 +153,12 @@ async function fetchCapacityEstimate(
     }
 }
 
-async function loadResourceSnapshot(resource: MapResourceConfig) {
+async function loadResourceSnapshot(resource: MapResourceConfig, overrideHour?: number) {
     if (resource.kind === 'food') {
-        return fetchFoodEstimate(resource);
+        return fetchFoodEstimate(resource, overrideHour);
     }
 
-    return fetchCapacityEstimate(resource);
+    return fetchCapacityEstimate(resource, overrideHour);
 }
 
 export function buildFallbackStatus(building: MapBuildingConfig): MapBuildingStatus {
@@ -183,9 +195,12 @@ export function buildFallbackStatus(building: MapBuildingConfig): MapBuildingSta
 }
 
 export async function loadBuildingStatus(
-    building: MapBuildingConfig
+    building: MapBuildingConfig,
+    overrideHour?: number
 ): Promise<MapBuildingStatus> {
-    const resources = await Promise.all(building.resources.map(loadResourceSnapshot));
+    const resources = await Promise.all(
+        building.resources.map((r) => loadResourceSnapshot(r, overrideHour))
+    );
     const score = averageScore(resources);
 
     return {
@@ -196,13 +211,30 @@ export async function loadBuildingStatus(
     };
 }
 
-export async function loadAllBuildingStatuses(buildings: MapBuildingConfig[]) {
+export async function loadAllBuildingStatuses(buildings: MapBuildingConfig[], overrideHour?: number) {
     const statuses = await Promise.all(
         buildings.map(async (building) => [
             building.id,
-            await loadBuildingStatus(building),
+            await loadBuildingStatus(building, overrideHour),
         ] as const)
     );
 
     return Object.fromEntries(statuses) as Record<string, MapBuildingStatus>;
+}
+
+/**
+ * Load building statuses for multiple hours of the day.
+ * Returns a map of hour → building statuses, allowing time-projected estimates.
+ */
+export async function loadHourlyBuildingStatuses(
+    buildings: MapBuildingConfig[],
+    hours: number[]
+): Promise<Record<number, Record<string, MapBuildingStatus>>> {
+    const entries = await Promise.all(
+        hours.map(async (hour) => {
+            const statuses = await loadAllBuildingStatuses(buildings, hour);
+            return [hour, statuses] as const;
+        })
+    );
+    return Object.fromEntries(entries);
 }
