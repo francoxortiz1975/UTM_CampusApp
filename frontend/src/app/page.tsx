@@ -180,7 +180,6 @@ export default function Home() {
     const foodApp = apps.find((app) => app.href === '/food');
     const plannerApp = apps.find((app) => app.href === '/planner');
     const eventApp = apps.find((app) => app.href === '/events');
-    const bottomApps = apps.filter((app) => app.href !== '/map' && app.href !== '/food');
     const lowerApps = apps.filter(
         (app) => app.href !== '/map' && app.href !== '/food' && app.href !== '/planner' && app.href !== '/events'
     );

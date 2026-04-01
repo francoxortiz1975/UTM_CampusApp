@@ -251,7 +251,7 @@ export default function EventsPage() {
       <Header />
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 pt-8">
-        <h1 className="font-display text-3xl font-bold leading-[1.28] text-slate-900 dark:text-white">
+        <h1 className="font-display bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-3xl font-bold leading-[1.28] text-transparent dark:from-violet-300 dark:to-fuchsia-300">
           Event Calendar
         </h1>
       </div>
