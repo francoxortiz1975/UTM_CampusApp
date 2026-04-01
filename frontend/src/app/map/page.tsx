@@ -28,20 +28,20 @@ const polygonPalette: Record<
     { fill: string; stroke: string; text: string; dot: string }
 > = {
     green: {
-        fill: 'rgba(16, 185, 129, 0.46)',
-        stroke: 'rgba(236, 253, 245, 0.95)',
+        fill: 'rgba(16, 185, 129, 0.55)',
+        stroke: 'rgba(5, 150, 105, 0.7)',
         text: '#052e16',
         dot: '#10b981',
     },
     yellow: {
-        fill: 'rgba(250, 204, 21, 0.5)',
-        stroke: 'rgba(254, 252, 232, 0.95)',
+        fill: 'rgba(250, 204, 21, 0.55)',
+        stroke: 'rgba(202, 138, 4, 0.7)',
         text: '#713f12',
         dot: '#eab308',
     },
     red: {
-        fill: 'rgba(248, 113, 113, 0.5)',
-        stroke: 'rgba(255, 241, 242, 0.95)',
+        fill: 'rgba(248, 113, 113, 0.55)',
+        stroke: 'rgba(225, 29, 72, 0.7)',
         text: '#881337',
         dot: '#f43f5e',
     },
@@ -226,7 +226,7 @@ export default function MapPage() {
                     <div className="rounded-[30px] border border-white/70 bg-white/85 p-5 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/85 dark:shadow-black/30">
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                             <p className="text-sm text-slate-600 dark:text-zinc-300">
-                                A clean campus diagram showing where our tracked buildings sit relative to one another.
+                                UTM campus &mdash; buildings placed from real GPS coordinates.
                             </p>
                             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
                                 {[
@@ -245,7 +245,7 @@ export default function MapPage() {
                         </div>
 
                         <div
-                            className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-slate-100 shadow-inner dark:border-zinc-700 dark:bg-zinc-950"
+                            className="relative overflow-hidden rounded-[24px] border border-slate-200 shadow-inner dark:border-zinc-700"
                             style={{
                                 aspectRatio: `${MAP_VIEWBOX.width} / ${MAP_VIEWBOX.height}`,
                             }}
@@ -255,147 +255,13 @@ export default function MapPage() {
                                 className="absolute inset-0 h-full w-full"
                                 aria-label="Interactive campus map"
                             >
-                                <rect
-                                    x="0"
-                                    y="0"
-                                    width={MAP_VIEWBOX.width}
-                                    height={MAP_VIEWBOX.height}
-                                    fill="#f5efe4"
-                                />
-                                <path
-                                    d="M 40 92 L 170 42 L 1140 42 L 1160 190 L 1140 786 L 1012 860 L 238 860 L 92 786 L 64 236 Z"
-                                    fill="#fbf8f2"
-                                />
-                                <path
-                                    d="M 0 0 L 280 0 L 220 160 L 0 250 Z"
-                                    fill="#dff3df"
-                                />
-                                <path
-                                    d="M 930 0 L 1200 0 L 1200 360 L 1060 310 L 990 204 Z"
-                                    fill="#dff3df"
-                                />
-                                <path
-                                    d="M 998 570 L 1200 530 L 1200 900 L 1010 900 L 972 822 Z"
-                                    fill="#dff3df"
-                                />
-                                <path
-                                    d="M 0 632 L 198 710 L 252 900 L 0 900 Z"
-                                    fill="#dff3df"
-                                />
-                                <path
-                                    d="M 170 70 C 250 132, 282 198, 310 300 C 336 390, 410 506, 516 628 C 598 724, 718 804, 958 822"
-                                    fill="none"
-                                    stroke="#b2bbc7"
-                                    strokeWidth="24"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                                <path
-                                    d="M 542 74 C 760 76, 936 92, 1074 130"
-                                    fill="none"
-                                    stroke="#b2bbc7"
-                                    strokeWidth="18"
-                                    strokeLinecap="round"
-                                />
-                                <path
-                                    d="M 790 214 L 750 660"
-                                    fill="none"
-                                    stroke="#b2bbc7"
-                                    strokeWidth="18"
-                                    strokeLinecap="round"
-                                />
-                                <path
-                                    d="M 480 790 C 604 760, 784 748, 1018 784"
-                                    fill="none"
-                                    stroke="#b2bbc7"
-                                    strokeWidth="18"
-                                    strokeLinecap="round"
-                                />
-                                <path
-                                    d="M 380 274 C 474 246, 618 222, 770 228"
-                                    fill="none"
-                                    stroke="#c4ccd6"
-                                    strokeWidth="10"
-                                    strokeLinecap="round"
-                                />
-                                <rect
-                                    x="438"
-                                    y="234"
-                                    width="176"
-                                    height="118"
-                                    rx="12"
-                                    fill="#d4e7c6"
-                                    stroke="#b7d0a5"
-                                    strokeWidth="4"
-                                />
-                                <rect
-                                    x="965"
-                                    y="204"
-                                    width="90"
-                                    height="148"
-                                    rx="12"
-                                    fill="#d4e7c6"
-                                    stroke="#b7d0a5"
-                                    strokeWidth="4"
-                                />
-                                <rect
-                                    x="1038"
-                                    y="632"
-                                    width="98"
-                                    height="170"
-                                    rx="12"
-                                    fill="#d4e7c6"
-                                    stroke="#b7d0a5"
-                                    strokeWidth="4"
-                                />
-                                <ellipse
-                                    cx="640"
-                                    cy="878"
-                                    rx="98"
-                                    ry="34"
-                                    fill="#bfe3f2"
-                                    stroke="#96c8df"
-                                    strokeWidth="4"
-                                />
-                                <text
-                                    x="270"
-                                    y="430"
-                                    fill="#7c8797"
-                                    fontSize="26"
-                                    fontWeight="700"
-                                    transform="rotate(63 270 430)"
-                                >
-                                    Residence Rd
-                                </text>
-                                <text
-                                    x="586"
-                                    y="94"
-                                    fill="#7c8797"
-                                    fontSize="24"
-                                    fontWeight="700"
-                                >
-                                    Outer Cir
-                                </text>
-                                <text
-                                    x="778"
-                                    y="450"
-                                    fill="#7c8797"
-                                    fontSize="22"
-                                    fontWeight="700"
-                                    transform="rotate(89 778 450)"
-                                >
-                                    Middle Rd
-                                </text>
-                                <text
-                                    x="690"
-                                    y="760"
-                                    fill="#7c8797"
-                                    fontSize="24"
-                                    fontWeight="700"
-                                >
-                                    Inner Cir Rd
-                                </text>
+                                {/* ── Base ground ── */}
+                                <rect width={MAP_VIEWBOX.width} height={MAP_VIEWBOX.height} className="fill-[#f0f0f0] dark:fill-[#1a1a2e]" />
 
+                                {/* ── Campus area (subtle oval zone) ── */}
+                                <ellipse cx="530" cy="450" rx="500" ry="400" className="fill-[#e8e8e8] dark:fill-[#252540]" opacity="0.5" />
+
+                                {/* ── Building polygons + labels ── */}
                                 {MAP_BUILDINGS.map((building) => {
                                     const status =
                                         statuses[building.id] ?? buildFallbackStatus(building);
@@ -421,11 +287,13 @@ export default function MapPage() {
                                                 points={building.polygon.points}
                                                 fill={palette.fill}
                                                 stroke={isSelected ? '#ffffff' : palette.stroke}
-                                                strokeWidth={isSelected ? 5 : 3}
+                                                strokeWidth={isSelected ? 5 : 2.5}
+                                                strokeLinejoin="round"
                                                 style={{
                                                     filter: isSelected
-                                                        ? 'drop-shadow(0 0 14px rgba(15, 23, 42, 0.35))'
-                                                        : 'drop-shadow(0 0 10px rgba(15, 23, 42, 0.18))',
+                                                        ? 'drop-shadow(0 0 12px rgba(15, 23, 42, 0.35))'
+                                                        : 'drop-shadow(0 2px 6px rgba(15, 23, 42, 0.15))',
+                                                    transition: 'filter 0.2s, stroke-width 0.2s',
                                                 }}
                                             />
                                             <BuildingLabel
@@ -435,7 +303,7 @@ export default function MapPage() {
                                                 width={building.polygon.labelWidth}
                                                 textColor={palette.text}
                                                 dotColor={palette.dot}
-                                                fontSize={isSelected ? 22 : 19}
+                                                fontSize={building.polygon.labelFontSize ?? (isSelected ? 22 : 19)}
                                             />
                                         </g>
                                     );

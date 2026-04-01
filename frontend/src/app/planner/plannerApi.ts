@@ -1,10 +1,16 @@
 function apiBase(): string {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname || 'localhost';
-    return `http://${host}:5000`;
+    return `http://${host}:5001`;
   }
 
-  return 'http://localhost:5000';
+  return 'http://localhost:5001';
+}
+
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
 export type SavedPlannerCalendar = {
@@ -14,7 +20,7 @@ export type SavedPlannerCalendar = {
 
 export async function loadSavedPlannerCalendar(): Promise<SavedPlannerCalendar | null> {
   try {
-    const result = await fetch(`${apiBase()}/planner/calendar`, {
+    const result = await fetchWithTimeout(`${apiBase()}/planner/calendar`, {
       method: 'GET',
       credentials: 'include',
     });
@@ -28,7 +34,7 @@ export async function loadSavedPlannerCalendar(): Promise<SavedPlannerCalendar |
 
 export async function savePlannerCalendar(calendarText: string): Promise<SavedPlannerCalendar | null> {
   try {
-    const result = await fetch(`${apiBase()}/planner/calendar`, {
+    const result = await fetchWithTimeout(`${apiBase()}/planner/calendar`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

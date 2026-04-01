@@ -32,8 +32,8 @@ const getColor = (p: number) =>
 const now = new Date();
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 const GYM_OVERRIDES_KEY = 'placeholder:gymCapacityOverrides';
 const gymId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
 const GYMS = [

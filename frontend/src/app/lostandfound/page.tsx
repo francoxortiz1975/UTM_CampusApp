@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 
 export default function LostAndFound() {
   const [items, setItems] = useState([]);
@@ -170,13 +170,13 @@ export default function LostAndFound() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
       <Header />
 
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold text-gray-800">Lost & Found</h1>
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-zinc-100">Lost & Found</h1>
           <button
             onClick={() => setShowModal(true)}
             className="bg-blue-600 text-white px-5 py-2 rounded-xl hover:bg-blue-700 shadow"
@@ -193,30 +193,30 @@ export default function LostAndFound() {
             return (
               <div
                 key={item.id}
-                className="break-inside-avoid bg-white rounded-2xl shadow-md p-4 hover:shadow-lg transition cursor-pointer"
+                className="break-inside-avoid bg-white dark:bg-zinc-900 rounded-2xl shadow-md p-4 hover:shadow-lg cursor-pointer border border-transparent dark:border-zinc-800"
                 onClick={() => toggleComments(item.id)}
               >
                 {editingId === item.id ? (
                   <div className="space-y-2">
                     <input
-                      className="border rounded px-2 py-1 w-full"
+                      className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={editItem}
                       onChange={(e) => setEditItem(e.target.value)}
                     />
                     <textarea
-                      className="border rounded px-2 py-1 w-full"
+                      className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={editDesc}
                       onChange={(e) => setEditDesc(e.target.value)}
                     />
                     <div className="flex gap-2">
                       <button
-                        className="bg-green-600 text-white px-3 py-1 rounded"
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
                         onClick={() => updateItem(item.id)}
                       >
                         Save
                       </button>
                       <button
-                        className="bg-gray-400 text-white px-3 py-1 rounded"
+                        className="bg-gray-400 hover:bg-gray-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-white px-3 py-1 rounded"
                         onClick={() => setEditingId(null)}
                       >
                         Cancel
@@ -227,23 +227,23 @@ export default function LostAndFound() {
                   <>
                     {/* Title + Date */}
                     <div className="flex justify-between items-start mb-1">
-                      <h2 className="text-lg font-semibold text-gray-800">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
                         {item.item}
                       </h2>
                       <span
-                        className="text-xs text-gray-400"
+                        className="text-xs text-gray-400 dark:text-zinc-500"
                         title={new Date(item.created_at).toLocaleString()}
                       >
                         {formatDate(item.created_at)}
                       </span>
                     </div>
 
-                    <p className="text-gray-600 text-sm mb-3">{item.desc}</p>
+                    <p className="text-gray-600 dark:text-zinc-300 text-sm mb-3">{item.desc}</p>
 
                     <div className="flex justify-between">
                       {isOwner && (
                         <button
-                          className="text-yellow-600 text-sm font-medium"
+                          className="text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 text-sm font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingId(item.id);
@@ -256,7 +256,7 @@ export default function LostAndFound() {
                       )}
                       {isOwner && (
                         <button
-                          className="text-red-600 text-sm font-medium"
+                          className="text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 text-sm font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteItem(item.id);
@@ -269,26 +269,26 @@ export default function LostAndFound() {
 
                     {/* Comments Section */}
                     {activeItemId === item.id && (
-                      <div className="mt-3 border-t pt-2 space-y-2">
+                      <div className="mt-3 border-t dark:border-zinc-700 pt-3 space-y-2">
                         {(comments[item.id] || []).map((c) => (
-                          <div key={c.id} className="text-sm text-gray-700">
+                          <div key={c.id} className="text-sm text-gray-700 dark:text-zinc-300">
                             {c.comment}{" "}
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-gray-400 dark:text-zinc-500">
                               by user {c.user_id}
                             </span>
                           </div>
                         ))}
 
-                        <div className="flex mt-2 gap-2">
+                        <div className="flex mt-3 gap-2">
                           <input
-                            className="border rounded px-2 py-1 flex-1"
+                            className="border dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded px-2 py-1 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Add a comment..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             onClick={(e) => e.stopPropagation()} // prevent toggle
                           />
                           <button
-                            className="bg-blue-600 text-white px-3 py-1 rounded"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
                             onClick={(e) => {
                               e.stopPropagation();
                               postComment(item.id);
@@ -307,44 +307,44 @@ export default function LostAndFound() {
         </div>
 
         {items.length === 0 && (
-          <p className="text-gray-500">No lost & found items.</p>
+          <p className="text-gray-500 dark:text-zinc-400 text-center py-10">No lost & found items.</p>
         )}
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 border border-transparent dark:border-zinc-800">
             {errorMsg && (
-              <div className="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
                 {errorMsg}
               </div>
             )}
 
-            <h2 className="text-2xl font-semibold">Add New Item</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Add New Item</h2>
 
             <input
-              className="border rounded-lg px-3 py-2 w-full"
-              placeholder="Item"
+              className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Item Name"
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
             />
             <textarea
-              className="border rounded-lg px-3 py-2 w-full"
+              className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 w-full min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Description"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
             />
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3 pt-2">
               <button
-                className="bg-gray-300 px-4 py-2 rounded-lg"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 px-5 py-2 rounded-lg"
                 onClick={() => setShowModal(false)}
               >
                 Cancel
               </button>
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
                 onClick={createItem}
               >
                 Add
