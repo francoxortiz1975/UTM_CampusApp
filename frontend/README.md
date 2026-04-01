@@ -1,42 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend — Campus Dashboard
+
+The public-facing **Next.js** application for the campus dashboard. It uses the **App Router**, **TypeScript**, and **Tailwind CSS** to present food, gym, parking, events, map, and lost-and-found experiences behind one consistent layout and navigation.
+
+## Stack
+
+- [Next.js](https://nextjs.org/) 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- [Recharts](https://recharts.org/) for charts
+- [Lucide React](https://lucide.dev/) for icons
+
+## Prerequisites
+
+- Node.js 20 or newer recommended
+- The **Flask backend** running (default `http://localhost:5000`) so data-fetching routes work end-to-end
 
 ## Setup
+
+From this directory:
 
 ```bash
 npm install
 ```
 
-## Getting Started
-
-First, run the development server:
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The app hot-reloads when you edit files under `src/`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Other scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+|---------|---------|
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Run ESLint |
 
-## Learn More
+## Project structure (overview)
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/` — Routes and pages (e.g. food, gym, parking, events, map, lost-and-found)
+- `src/components/` — Shared UI (header, cards, charts, etc.)
+- `src/styles/` — Global styles
+- `src/types/` — Shared TypeScript types and auth helpers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API integration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Pages call the backend on **port 5000**. In the browser, the code typically uses `http://localhost:5000` or `http://127.0.0.1:5000` depending on hostname detection. For team testing from another device on your network, you may need to align the API base URL in the relevant page or extract a single env-driven constant so every route points at the same host.
 
-## Deploy on Vercel
+Session-sensitive flows (for example lost-and-found) use `credentials: "include"` where appropriate so cookies reach the Flask API.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Learn more
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
