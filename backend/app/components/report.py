@@ -2,7 +2,7 @@ from datetime import datetime
 from ..extensions import sqlalchemy
 from sqlalchemy import func
 
-class BluetoothReport(sqlalchemy.Model):
+class ScannerReport(sqlalchemy.Model):
     """
     Model representing a bluetooth report stored in the database.
     Each report is linked to a bluetooth scanner and timestamped so it can be
@@ -42,17 +42,17 @@ class BluetoothReport(sqlalchemy.Model):
 
         Returns
         -------
-        list[BluetoothReport]
-            A list of BluetoothReport objects matching all supplied filters.
+        list[ScannerReport]
+            A list of ScannerReport objects matching all supplied filters.
         """
-        query = BluetoothReport.query
+        query = ScannerReport.query
 
         if title is not None:
-            query = query.filter(BluetoothReport.title.contains(title))
+            query = query.filter(ScannerReport.title.contains(title))
         if location is not None:
-            query = query.filter(func.json_extract(BluetoothReport.content, "$.location") == location)
+            query = query.filter(func.json_extract(ScannerReport.content, "$.location") == location)
         # Order newest first for convenience
-        query = query.order_by(BluetoothReport.created_at.desc())
+        query = query.order_by(ScannerReport.created_at.desc())
         return query.all()
 
 

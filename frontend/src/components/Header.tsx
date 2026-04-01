@@ -6,7 +6,12 @@ import { useState, useEffect } from 'react';
 import type { User } from '../types/Authentication';
 import ThemeToggle from './ThemeToggle';
 
-export default function Header() {
+type HeaderProps = {
+    backHref?: string;
+    backLabel?: string;
+};
+
+export default function Header({ backHref = '/', backLabel = '← Back' }: HeaderProps) {
     const pathname = usePathname();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
@@ -22,7 +27,7 @@ export default function Header() {
     }, []);
 
     const goToHomePage = () => {
-        router.push('/');
+        router.push(backHref);
     };
 
     const handleLogout = async () => {
@@ -47,7 +52,7 @@ export default function Header() {
                         onClick={goToHomePage}
                         className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                     >
-                        ← Back
+                        {backLabel}
                     </button>
                 )}
 
