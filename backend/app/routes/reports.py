@@ -151,7 +151,7 @@ def full_day_report(month, day, page, name):
         elif page == 'food':
             open, close = FOOD_HOURS[name][WEEKDAYS[day]]
 
-        for time in range(open, close + 1):
+        for time in range(open, close):
             start = f"{time:02d}:00"
             end = f"{time:02d}:59"
             reports = Report.query_reports(
@@ -162,7 +162,6 @@ def full_day_report(month, day, page, name):
                 title=page,
                 location=name
             )
-            print(reports)
             total = 0
 
             for report in reports:
@@ -176,7 +175,9 @@ def full_day_report(month, day, page, name):
                 if page == 'parking':
                     avg = PARKING_BASELINE[time]
                 elif page == 'food':
+                    print("o")
                     avg = FOOD_BASELINE[time]
+                    print("h")
                 elif page == 'gym':
                     avg = GYM_BASELINE[time]
             else:
@@ -202,6 +203,7 @@ def full_day_report(month, day, page, name):
         return jsonify(report_data)
 
     except Exception as e:
+        print(e)
         status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
         return status.json(), status.code()
 
