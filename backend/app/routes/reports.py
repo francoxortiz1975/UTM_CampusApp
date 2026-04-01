@@ -1,7 +1,8 @@
 # app/routes/reports.py
 from flask import Blueprint, request, session, jsonify
-from ..components.report import Report, BluetoothReport
+from ..components.report import Report
 from ..components.statusreport import StatusCode, StatusReport
+from datetime import datetime
 
 reports_bp = Blueprint("reports", __name__)
 #so each group of routes lives in its own file
@@ -75,13 +76,16 @@ FOOD_HOURS = {
 '43': [(0,0),(8,16),(8,16),(8,16),(8,16),(8,14),(0,0)],
 }
 
+current_people_count = {} #Valid Locations are: oph_foodcourt, dh_starbucks, dh_foodcourt, 
+current_people_count_locations = {"oph_foodcourt": ['27','28','29','30','31','32','33','34','35','36','37','38','39','40','41'], "dh_starbucks": ['3'], "dh_foodcourt": ['20','21','22','23','24'],
+                                  "cct_foodcourt": ['43'], "second_cup": ['4'], 
+                                  "dv_foodcourt": ['2','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19'], "ib_foodcourt": ['1','25','26']}
 
 import json
 
 @reports_bp.route("/<int:month>/<string:day>/<int:time>/<string:page>/<string:name>", methods=["GET"])
 def get_average(month, day, time, page, name):
     try:
-
         if not (1 <= month <= 12):
             status = StatusReport("month must be between 1 and 12", StatusCode.BAD_REQUEST)
             return status.json(), status.code()
@@ -105,31 +109,35 @@ def get_average(month, day, time, page, name):
 
         for report in reports:
             data = json.loads(report.content)
-            total += data["num_devices"]
+            if page == 'food':
+                total += data["wait_minutes"]
+            else:
+                total += data["capacity"]
 
+        current_people = 0
+        if page == 'food':
+            for location in current_people_count_locations.keys():
+                if name in current_people_count_locations[location]:
+                    if location in current_people_count.keys():
+                        current_people = current_people_count[location]
+                        break
+    
         if len(reports) == 0:
             if page == 'parking':
                 avg = PARKING_BASELINE[time]
             elif page == 'food':
                 avg = FOOD_BASELINE[time]
+                if current_people != 0:
+                    avg = 0.75 * avg + 0.25 * (current_people * 2)
+                    print("Original avg: ", FOOD_BASELINE[time], "New avg: ", avg)
             elif page == 'gym':
                 avg = GYM_BASELINE[time]
-        else:
-            avg = total / len(reports)
-
-        bluetooth_reports = BluetoothReport.query_reports(
-            title=page,
-            location=name
-        )
-
-        bluetooth_total = 0
-
-        for report in bluetooth_reports:
-            data = json.loads(report.content)
-            bluetooth_total += data["num_devices"]
-
-        if len(bluetooth_reports) != 0:
-            avg = avg + bluetooth_total / len(bluetooth_reports)
+        else: 
+            if current_people != 0:
+                avg = 0.75 * (total / len(reports)) + 0.25 * (current_people * 2)
+                print("Original avg: ", total / len(reports), "New avg: ", avg)
+            else:
+                avg = total / len(reports)
 
         status = StatusReport(
             {"estimate": round(avg)},
@@ -139,11 +147,13 @@ def get_average(month, day, time, page, name):
         return status.json(), status.code()
 
     except Exception as e:
+        print(e)
         status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
         return status.json(), status.code()
 
 @reports_bp.route("/<int:month>/<string:day>/<string:page>/<string:name>", methods=["GET"])
 def full_day_report(month, day, page, name):
+    current_hour = datetime.now().hour
     if not (1 <= month <= 12):
         status = StatusReport("month must be between 1 and 12", StatusCode.BAD_REQUEST)
         return status.json(), status.code()
@@ -162,7 +172,7 @@ def full_day_report(month, day, page, name):
         elif page == 'food':
             open, close = FOOD_HOURS[name][WEEKDAYS[day]]
 
-        for time in range(open, close + 1):
+        for time in range(open, close):
             start = f"{time:02d}:00"
             end = f"{time:02d}:59"
             reports = Report.query_reports(
@@ -173,7 +183,6 @@ def full_day_report(month, day, page, name):
                 title=page,
                 location=name
             )
-            print(reports)
             total = 0
 
             for report in reports:
@@ -183,29 +192,31 @@ def full_day_report(month, day, page, name):
                 else:
                     total += data["capacity"]
 
+            current_people = 0
+            if time == current_hour:
+                if page == 'food':
+                    for location in current_people_count_locations.keys():
+                        if name in current_people_count_locations[location]:
+                            if location in current_people_count.keys():
+                                current_people = current_people_count[location]
+                                break
+
             if len(reports) == 0:
                 if page == 'parking':
                     avg = PARKING_BASELINE[time]
                 elif page == 'food':
                     avg = FOOD_BASELINE[time]
+                    if current_people != 0:
+                        avg = 0.75 * avg + 0.25 * (current_people * 2)
+                        print("Original avg: ", FOOD_BASELINE[time], "New avg: ", avg)
                 elif page == 'gym':
                     avg = GYM_BASELINE[time]
             else:
-                avg = total / len(reports)
-
-            bluetooth_reports = BluetoothReport.query_reports(
-                title=page,
-                location=name
-            )
-
-            bluetooth_total = 0
-
-            for report in bluetooth_reports:
-                data = json.loads(report.content)
-                bluetooth_total += data["num_devices"]
-
-            if len(bluetooth_reports) != 0:
-                avg = avg + bluetooth_total / len(bluetooth_reports)
+                if current_people != 0:
+                    avg = 0.75 * (total / len(reports)) + 0.25 * (current_people * 2)
+                    print("Original avg: ", total / len(reports), "New avg: ", avg)
+                else:
+                    avg = total / len(reports)
             
             r_time = time
             if (time > 12):
@@ -227,6 +238,7 @@ def full_day_report(month, day, page, name):
         return jsonify(report_data)
 
     except Exception as e:
+        print(e)
         status = StatusReport(str(e), StatusCode.INTERNAL_SERVER_ERROR)
         return status.json(), status.code()
 
@@ -257,27 +269,14 @@ def create_report():
     status = StatusReport(report.to_dict(), StatusCode.CREATED)
     return status.json(), status.code()
 
-@reports_bp.route("/scanner/", methods=["POST"], strict_slashes=False)
-def create_bluetooth_report():
-    """
-    POST /reports/scanner/
-    Body: { "title": "...", "content": "..." }
-    """
+
+@reports_bp.route("/scanner", methods=["POST"], strict_slashes=False)
+def accept_scanner():
     data = request.json or {}
-    device_id = session.get("device_id")
-    title = data.get("title")
-    content = data.get("content", "")
+    people_count = data.get("people_count")
+    location = data.get("title")
 
-    if not device_id:
-        status = StatusReport("You must be logged in to submit a report", StatusCode.UNAUTHORIZED)
-        return status.json(), status.code()
+    current_people_count[location] = people_count
 
-    if not title:
-        status = StatusReport("title is required", StatusCode.BAD_REQUEST)
-        return status.json(), status.code()
-
-    report = ScannerReport(id=device_id, title=title, content=content)
-    report.save()
-
-    status = StatusReport(report.to_dict(), StatusCode.CREATED)
+    status = StatusReport("", StatusCode.OK)
     return status.json(), status.code()

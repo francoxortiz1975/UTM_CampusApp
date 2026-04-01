@@ -5,6 +5,10 @@ import argparse
 from ultralytics import YOLO
 from config import Config
 
+titles = ["oph_foodcourt", "dh_starbucks", "dh_foodcourt",
+          "cct_foodcourt", "second_cup", 
+          "dv_foodcourt", "ib_foodcourt"]
+
 # Load model
 model = YOLO("yolov8n.pt")
 
@@ -18,13 +22,15 @@ parser.add_argument("--title", type=str, required=True)
 
 args = parser.parse_args()
 
+if args.title not in titles:
+    print("Title must be in: ", titles)
+    exit(0)
+
 def send_to_server(people_count):
     try:
         response = requests.post(Config.BACKEND_URL, json={
             "title": args.title,
-            "content": {
-                "people_count": people_count,
-            },
+            "people_count": people_count,
         })
         print("Request:", response)
     except Exception as e:
