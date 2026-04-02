@@ -301,7 +301,7 @@ export default function EventsPage() {
         </aside>
 
         {/* Main */}
-        <main className="flex-1 space-y-6 min-w-0">
+        <div className="flex-1 space-y-6 min-w-0">
           {!reviewPending ? (
             <div className="bg-white dark:bg-zinc-900 p-6 shadow rounded-xl border border-transparent dark:border-zinc-800">
               <div className="flex justify-between items-center mb-6">
