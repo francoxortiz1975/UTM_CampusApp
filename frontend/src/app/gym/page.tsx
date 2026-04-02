@@ -32,8 +32,8 @@ const getColor = (p: number) =>
 const now = new Date();
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 const GYM_OVERRIDES_KEY = 'placeholder:gymCapacityOverrides';
 const gymId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '_');
 const GYMS = [
@@ -129,11 +129,14 @@ export default function Gym() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0b0c10] dark:text-zinc-100">
+      <div className="pointer-events-none absolute -left-20 -top-16 h-80 w-80 rounded-full bg-white/70 blur-3xl dark:bg-white/10" />
+      <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-emerald-200/30 blur-3xl dark:bg-emerald-600/10" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
-      <div className="mx-auto max-w-6xl space-y-6 p-6">
+      <div className="relative z-10 mx-auto max-w-6xl space-y-6 p-6">
         {/* Page Title */}
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">
+        <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-emerald-500 to-lime-500 bg-clip-text text-transparent">
           Gym Availability
         </h1>
         

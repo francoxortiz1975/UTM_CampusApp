@@ -37,7 +37,7 @@ export default function Header({ backHref = '/', backLabel = '← Back' }: Heade
 
     if (loading) {
         return (
-            <header className="flex items-center justify-between bg-white p-6 text-gray-900 shadow dark:bg-zinc-900 dark:text-zinc-100">
+            <header className="bg-[linear-gradient(135deg,#1d4ed8_0%,#0f2f6b_100%)] p-6 text-white">
                 <span>Loading...</span>
                 <ThemeToggle />
             </header>
@@ -45,39 +45,41 @@ export default function Header({ backHref = '/', backLabel = '← Back' }: Heade
     }
 
     return (
-        <header className="flex items-center justify-between bg-white p-6 shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
-            <div className="flex items-center gap-4">
-                {pathname !== '/' && (
-                    <button
-                        onClick={goToHomePage}
-                        className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                    >
-                        {backLabel}
-                    </button>
-                )}
+        <header className="bg-[linear-gradient(135deg,#1d4ed8_0%,#0f2f6b_100%)]">
+            <div className="flex items-center justify-between px-6 py-4">
+                <div className="flex items-center gap-6">
+                    {pathname !== '/' && (
+                        <button
+                            onClick={goToHomePage}
+                            className="inline-flex items-center text-sm font-medium text-white/80 transition-colors hover:text-white"
+                        >
+                            {backLabel}
+                        </button>
+                    )}
 
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-zinc-100">
-                    Dashboard
-                </h1>
-            </div>
+                    <h1 className="font-display text-2xl font-bold text-white">
+                        UTM CampusApp
+                    </h1>
+                </div>
 
-            <div className="flex items-center gap-3">
-                <ThemeToggle />
-                {user == null ? (
-                    <button
-                        onClick={() => router.push('/signin')}
-                        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                        Sign In
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleLogout}
-                        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                    >
-                        Sign Out
-                    </button>
-                )}
+                <div className="flex items-center gap-3">
+                    <ThemeToggle />
+                    {user == null ? (
+                        <button
+                            onClick={() => router.push('/signin')}
+                            className="rounded-lg border border-blue-200/45 bg-blue-300/15 px-4 py-2 font-medium text-white backdrop-blur-sm transition-all hover:border-blue-100/60 hover:bg-blue-300/25 dark:border-blue-200/35 dark:bg-blue-300/10 dark:hover:bg-blue-300/20"
+                        >
+                            Sign In
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleLogout}
+                            className="rounded-lg border border-blue-200/45 bg-blue-300/15 px-4 py-2 font-medium text-white backdrop-blur-sm transition-all hover:border-blue-100/60 hover:bg-blue-300/25 dark:border-blue-200/35 dark:bg-blue-300/10 dark:hover:bg-blue-300/20"
+                        >
+                            Sign Out
+                        </button>
+                    )}
+                </div>
             </div>
         </header>
     );
