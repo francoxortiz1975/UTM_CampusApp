@@ -224,7 +224,20 @@ export default function EventsPage() {
       <div key={day} className="min-h-24 border dark:border-zinc-800 bg-white dark:bg-zinc-900 p-2">
         <div className="font-semibold text-gray-900 dark:text-zinc-100">{day}</div>
         {dayEvents.map(event => (
-          <div key={event.id} className={`text-xs p-1 mt-1 rounded cursor-pointer ${getClubColor(event.club)}`} onClick={() => setSelectedEvent(event)}>
+          <div
+            key={event.id}
+            role="button"
+            tabIndex={0}
+            className={`mt-1 cursor-pointer rounded p-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 ${getClubColor(event.club)}`}
+            onClick={() => setSelectedEvent(event)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setSelectedEvent(event);
+              }
+            }}
+            aria-label={`${event.title}, ${event.club}, ${formatTime(event.startTime)}`}
+          >
             {formatTime(event.startTime)} {event.title}
           </div>
         ))}
@@ -242,46 +255,88 @@ export default function EventsPage() {
     if (currentUserId !== null && admins.includes(currentUserId)) fetchPendingEvents();
   }, [currentMonth, currentUserId]);
 
+  useEffect(() => {
+    if (!selectedEvent) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedEvent(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedEvent]);
+
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowCreateModal(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showCreateModal]);
+
   // ---------------- Render ----------------
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
       <Header />
 
-      <div className="flex w-full pt-6 px-6 gap-6">
+      <main id="main-content" className="flex w-full gap-6 px-6 pt-6">
+        <h1 className="sr-only">Event calendar</h1>
         {/* Sidebar */}
-        <aside className="w-64 bg-white dark:bg-zinc-900 p-6 shadow rounded-xl space-y-4 h-fit border border-transparent dark:border-zinc-800 shrink-0">
+        <aside
+          aria-label="Calendar filters and actions"
+          className="h-fit w-64 shrink-0 space-y-4 rounded-xl border border-transparent bg-white p-6 shadow dark:border-zinc-800 dark:bg-zinc-900"
+        >
           <button
+            type="button"
             onClick={() => setShowCreateModal(true)}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700"
+            className="w-full rounded-lg bg-indigo-600 py-2 text-white hover:bg-indigo-700"
           >
             + Request Event
           </button>
 
           {currentUserId !== null && admins.includes(currentUserId) && (
             <button
+              type="button"
               onClick={() => setReviewPending(prev => !prev)}
-              className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600"
+              aria-pressed={reviewPending}
+              className="w-full rounded-lg bg-yellow-500 py-2 text-white hover:bg-yellow-600"
             >
               Review Pending
             </button>
           )}
 
-          <input
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full border p-2 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          <div>
+            <label htmlFor="event-calendar-search" className="sr-only">
+              Search events by title
+            </label>
+            <input
+              id="event-calendar-search"
+              type="search"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border bg-white p-2 dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
 
-          <label className="flex items-center gap-2 mt-2 cursor-pointer">
-            <input type="checkbox" checked={showPastEvents} onChange={(e) => setShowPastEvents(e.target.checked)} className="rounded dark:bg-zinc-900 dark:border-zinc-700" />
+          <label className="mt-2 flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={showPastEvents} onChange={(e) => setShowPastEvents(e.target.checked)} className="rounded dark:border-zinc-700 dark:bg-zinc-900" />
             <span>Show Past</span>
           </label>
 
-          <select value={selectedClub} onChange={(e) => setSelectedClub(e.target.value)} className="w-full mt-2 border p-2 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="all">All Clubs</option>
-            {allClubs.map(club => <option key={club}>{club}</option>)}
-          </select>
+          <div>
+            <label htmlFor="event-club-filter" className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
+              Club
+            </label>
+            <select
+              id="event-club-filter"
+              value={selectedClub}
+              onChange={(e) => setSelectedClub(e.target.value)}
+              className="w-full rounded-lg border bg-white p-2 dark:border-zinc-700 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Clubs</option>
+              {allClubs.map(club => <option key={club}>{club}</option>)}
+            </select>
+          </div>
 
           <Link
             href="/eventshuffle"
@@ -291,20 +346,38 @@ export default function EventsPage() {
           </Link>
         </aside>
 
-        {/* Main */}
-        <main className="flex-1 space-y-6 min-w-0">
+        {/* Calendar column */}
+        <div className="min-w-0 flex-1 space-y-6">
           {!reviewPending ? (
-            <div className="bg-white dark:bg-zinc-900 p-6 shadow rounded-xl border border-transparent dark:border-zinc-800">
-              <div className="flex justify-between items-center mb-6">
-                <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">←</button>
+            <div className="rounded-xl border border-transparent bg-white p-6 shadow dark:border-zinc-800 dark:bg-zinc-900">
+              <div
+                role="region"
+                aria-label={`Calendar, ${monthName}`}
+              >
+              <div className="mb-6 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  aria-label="Previous month"
+                  className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                >
+                  ←
+                </button>
                 <h2 className="text-xl font-bold">{monthName}</h2>
-                <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">→</button>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  aria-label="Next month"
+                  className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                >
+                  →
+                </button>
               </div>
 
               {loading ? (
-                <p className="text-center py-10 text-gray-500 dark:text-zinc-400">Loading events...</p>
+                <p className="py-10 text-center text-gray-500 dark:text-zinc-400">Loading events...</p>
               ) : (
-                <div className="grid grid-cols-7 border-l border-t dark:border-zinc-800 rounded overflow-hidden">
+                <div className="grid grid-cols-7 overflow-hidden rounded border-l border-t dark:border-zinc-800">
                   {/* Day Headers */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="text-center py-2 text-sm font-semibold bg-gray-50 dark:bg-zinc-950/50 border-r border-b dark:border-zinc-800">
@@ -314,6 +387,7 @@ export default function EventsPage() {
                   {days}
                 </div>
               )}
+              </div>
             </div>
           ) : (
             // ---------------- Pending Events for Admin ----------------
@@ -330,36 +404,41 @@ export default function EventsPage() {
                   <p className="text-sm text-gray-600 dark:text-zinc-400">Location: <span className="text-gray-900 dark:text-zinc-200">{event.location}</span></p>
                   <p className="text-sm text-gray-600 dark:text-zinc-400">Description: <span className="text-gray-900 dark:text-zinc-200">{event.description}</span></p>
                   <div className="flex gap-2 pt-2">
-                    <button onClick={() => acceptEvent(event.id)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Accept</button>
-                    <button onClick={() => declineEvent(event.id)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Decline</button>
+                    <button type="button" onClick={() => acceptEvent(event.id)} className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">Accept</button>
+                    <button type="button" onClick={() => declineEvent(event.id)} className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700">Decline</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </main>
-      </div>
+        </div>
+      </main>
 
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center sm:justify-end items-center sm:items-stretch p-4 sm:p-6 z-50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-stretch sm:justify-end sm:p-6"
           onClick={() => setSelectedEvent(null)}
         >
           <div
-            className="bg-white dark:bg-zinc-900 w-full sm:w-96 rounded-2xl shadow-xl p-6 space-y-4 border border-transparent dark:border-zinc-700 h-fit sm:h-auto overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="event-detail-title"
+            className="h-fit w-full max-h-[90vh] space-y-4 overflow-y-auto rounded-2xl border border-transparent bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 sm:h-auto sm:w-96"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-start">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-zinc-100">
+            <div className="flex items-start justify-between">
+              <h2 id="event-detail-title" className="text-xl font-bold text-gray-800 dark:text-zinc-100">
                 {selectedEvent.title}
               </h2>
               <button
+                type="button"
+                aria-label="Close event details"
                 onClick={() => setSelectedEvent(null)}
-                className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 text-lg"
+                className="text-lg text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
@@ -377,14 +456,14 @@ export default function EventsPage() {
             {/* Details */}
             <div className="space-y-3 text-sm text-gray-700 dark:text-zinc-300">
               <div className="flex items-center gap-2">
-                <span>📅</span>
+                <span aria-hidden="true">📅</span>
                 <span>
                   <strong className="text-gray-900 dark:text-zinc-100">Date:</strong> {formatDate(selectedEvent.date)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <span>⏰</span>
+                <span aria-hidden="true">⏰</span>
                 <span>
                   <strong className="text-gray-900 dark:text-zinc-100">Time:</strong>{" "}
                   {formatTime(selectedEvent.startTime)} –{" "}
@@ -394,7 +473,7 @@ export default function EventsPage() {
 
               {selectedEvent.location && (
                 <div className="flex items-center gap-2">
-                  <span>📍</span>
+                  <span aria-hidden="true">📍</span>
                   <span>
                     <strong className="text-gray-900 dark:text-zinc-100">Location:</strong> {selectedEvent.location}
                   </span>
@@ -412,10 +491,11 @@ export default function EventsPage() {
             </div>
 
             {/* Footer Action */}
-            <div className="pt-4 border-t dark:border-zinc-700 flex justify-end">
+            <div className="flex justify-end border-t pt-4 dark:border-zinc-700">
               <button
+                type="button"
                 onClick={() => setSelectedEvent(null)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
               >
                 Close
               </button>
@@ -426,22 +506,46 @@ export default function EventsPage() {
 
       {/* Create Event Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl border border-transparent dark:border-zinc-800" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold dark:text-zinc-100">Request New Event</h2>
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={() => setShowCreateModal(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-event-title"
+            className="w-full max-w-md space-y-4 rounded-2xl border border-transparent bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="create-event-title" className="text-xl font-bold dark:text-zinc-100">Request New Event</h2>
+
             <div className="space-y-3">
-              <input name="name" placeholder="Event Name" value={formData.name} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <input name="org" placeholder="Club" value={formData.org} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 color-scheme-light dark:[color-scheme:dark]" />
-              <input type="time" name="time" value={formData.time} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 color-scheme-light dark:[color-scheme:dark]" />
-              <input name="location" placeholder="Location" value={formData.location} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              <textarea name="desc" placeholder="Description" rows={3} value={formData.desc} onChange={handleChange} className="w-full border p-3 rounded-lg bg-white dark:bg-zinc-950 dark:border-zinc-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+              <div>
+                <label htmlFor="create-event-name" className="sr-only">Event name</label>
+                <input id="create-event-name" name="name" placeholder="Event Name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="create-event-org" className="sr-only">Club or organization</label>
+                <input id="create-event-org" name="org" placeholder="Club" value={formData.org} onChange={handleChange} className="w-full rounded-lg border bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="create-event-date" className="sr-only">Event date</label>
+                <input id="create-event-date" type="date" name="date" value={formData.date} onChange={handleChange} className="w-full rounded-lg border bg-white p-3 color-scheme-light dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="create-event-time" className="sr-only">Event start time</label>
+                <input id="create-event-time" type="time" name="time" value={formData.time} onChange={handleChange} className="w-full rounded-lg border bg-white p-3 color-scheme-light dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="create-event-location" className="sr-only">Event location</label>
+                <input id="create-event-location" name="location" placeholder="Location" value={formData.location} onChange={handleChange} className="w-full rounded-lg border bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="create-event-desc" className="sr-only">Event description</label>
+                <textarea id="create-event-desc" name="desc" placeholder="Description" rows={3} value={formData.desc} onChange={handleChange} className="w-full resize-none rounded-lg border bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowCreateModal(false)} className="bg-gray-200 dark:bg-zinc-800 text-gray-800 dark:text-zinc-200 px-5 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-700">Cancel</button>
-              <button onClick={createEvent} className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700">Submit</button>
+              <button type="button" onClick={() => setShowCreateModal(false)} className="rounded-lg bg-gray-200 px-5 py-2 text-gray-800 hover:bg-gray-300 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">Cancel</button>
+              <button type="button" onClick={createEvent} className="rounded-lg bg-indigo-600 px-5 py-2 text-white hover:bg-indigo-700">Submit</button>
             </div>
           </div>
         </div>

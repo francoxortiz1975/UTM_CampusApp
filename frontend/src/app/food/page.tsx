@@ -530,7 +530,7 @@ function FoodCard({
           <h2 className="text-2xl font-bold text-gray-800 dark:text-zinc-100">{data.name}</h2>
           <div className="mt-1 flex items-center text-sm text-gray-500 dark:text-zinc-400">
             <span className="mr-2 font-medium">{data.building}</span>
-            <span>📍</span>
+            <span aria-hidden="true">📍</span>
           </div>
         </div>
         <div className="text-right">
@@ -542,7 +542,11 @@ function FoodCard({
       </div>
 
       {/* Placeholder trend graph (will be replaced by backend-driven values in later sprint) */}
-      <div className="mb-4 h-40 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-indigo-400">
+      <div
+        className="mb-4 h-40 w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-indigo-400"
+        role="img"
+        aria-label={`Estimated wait time trend chart for ${data.name}`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={graph_data}>
             <XAxis dataKey="time" tick={{ fill: 'currentColor' }} />
@@ -581,7 +585,8 @@ function FoodCard({
 
       {/* Report Button */}
       <div className="flex justify-end">
-        <button 
+        <button
+          type="button"
           onClick={handleReportStatusClick}
           className="flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-2 text-sm font-medium text-white transition hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
           >
@@ -631,6 +636,7 @@ function FoodCard({
             step={1}
             value={waitMinutes}
             onChange={(e) => setWaitMinutes(Number(e.target.value))}
+            aria-label="Estimated wait time in minutes"
             className={`
               h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-300 dark:bg-zinc-600
               ${getWaitColour(waitMinutes)}
@@ -731,9 +737,8 @@ export default function FoodCourtPage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
       <Header />
-      
-      <div className="mx-auto max-w-4xl space-y-6 p-6">
-        
+
+      <main id="main-content" className="mx-auto max-w-4xl space-y-6 p-6">
         {/* Page Title */}
         <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">Campus Food</h1>
 
@@ -759,30 +764,50 @@ export default function FoodCourtPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Left Column: Search & Filters */}
           <div className="space-y-4">
             {/* Search */}
-            <div>
-               <h3 className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300">Restaurant Search:</h3>
-               <div className="relative">
-                 <input 
-                   type="text" 
-                   placeholder="Hinted search text..." 
-                   className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-4 pr-10 text-gray-900 placeholder-gray-500 focus:outline-purple-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:outline-purple-400"
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                 />
-                 <span className="absolute right-3 top-2.5 text-gray-400 dark:text-zinc-500">🔍</span>
-               </div>
-            </div>
+            <section aria-labelledby="food-search-heading">
+              <h3
+                id="food-search-heading"
+                className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300"
+              >
+                Restaurant Search:
+              </h3>
+              <div className="relative">
+                <label htmlFor="food-restaurant-search" className="sr-only">
+                  Search restaurants by name
+                </label>
+                <input
+                  id="food-restaurant-search"
+                  type="search"
+                  placeholder="Hinted search text..."
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-4 pr-10 text-gray-900 placeholder-gray-500 focus:outline-purple-500 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:outline-purple-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <span className="absolute right-3 top-2.5 text-gray-400 dark:text-zinc-500" aria-hidden="true">
+                  🔍
+                </span>
+              </div>
+            </section>
 
             {/* Filters */}
-            <div>
-              <h3 className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300">Filters:</h3>
-              <div className="flex flex-wrap gap-2">
-                <button 
+            <section aria-labelledby="food-filters-heading">
+              <h3
+                id="food-filters-heading"
+                className="mb-2 text-sm font-bold text-gray-700 dark:text-zinc-300"
+              >
+                Filters:
+              </h3>
+              <div
+                className="flex flex-wrap gap-2"
+                role="group"
+                aria-labelledby="food-filters-heading"
+              >
+                <button
+                  type="button"
                   onClick={() => setActiveFilter(null)}
                   className={`rounded-full border px-3 py-1 text-xs transition ${
                     activeFilter === null ? 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-purple-500'
@@ -790,13 +815,14 @@ export default function FoodCourtPage() {
                 >
                   All
                 </button>
-                {filters.map(filter => (
+                {filters.map((filter) => (
                   <button
+                    type="button"
                     key={filter}
                     onClick={() => setActiveFilter(filter === activeFilter ? null : filter)}
                     className={`rounded-full border px-3 py-1 text-xs transition ${
-                      activeFilter === filter 
-                        ? 'border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-600 dark:bg-purple-950 dark:text-purple-200' 
+                      activeFilter === filter
+                        ? 'border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-600 dark:bg-purple-950 dark:text-purple-200'
                         : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-purple-500'
                     }`}
                   >
@@ -804,19 +830,25 @@ export default function FoodCourtPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
           </div>
 
           {/* Right Column: Estimated Waiting Times List */}
-          <div className="md:col-span-2">
-            <h3 className="mb-3 text-lg font-bold text-gray-800 dark:text-zinc-100">Estimated Waiting Times:</h3>
+          <section className="md:col-span-2" aria-labelledby="food-wait-heading">
+            <h3
+              id="food-wait-heading"
+              className="mb-3 text-lg font-bold text-gray-800 dark:text-zinc-100"
+            >
+              Estimated Waiting Times:
+            </h3>
             <div className="overflow-hidden rounded-xl bg-white shadow dark:bg-zinc-900 dark:shadow-zinc-950/50">
               <ul className="divide-y divide-gray-100 dark:divide-zinc-800">
                 {filteredList.map((item) => {
                   const time = estimates[item.name] ?? item.waitTime;
                   return(
                     <li key={item.id}>
-                      <button 
+                      <button
+                        type="button"
                         onClick={async() => {
                           setSelectedId(item.id)
                           setSelectedTime(time);
@@ -828,16 +860,19 @@ export default function FoodCourtPage() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xl text-gray-400 dark:text-zinc-500">✪</span> {/* Placeholder Icon */}
+                          <span className="text-xl text-gray-400 dark:text-zinc-500" aria-hidden="true">
+                            ✪
+                          </span>
                           <div>
                             <p className="font-semibold text-gray-800 dark:text-zinc-100">{item.name}</p>
                             <p className="text-xs text-gray-400 dark:text-zinc-500">{item.building}</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-bold ${getWaitColour(time)}`}>
-                            {`${time} Minutes 🕒`}
+                            {`${time} Minutes `}
+                            <span aria-hidden="true">🕒</span>
                           </span>
                         </div>
                       </button>
@@ -852,10 +887,9 @@ export default function FoodCourtPage() {
                 )}
               </ul>
             </div>
-          </div>
-
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

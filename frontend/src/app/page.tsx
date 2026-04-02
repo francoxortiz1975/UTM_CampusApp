@@ -58,13 +58,6 @@ export default function Home() {
         <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
             <Header />
 
-            <a
-                href="#main-content"
-                className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-gray-900 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 dark:focus:bg-zinc-900 dark:focus:text-zinc-100 dark:focus:ring-offset-zinc-950"
-            >
-                Skip to main content
-            </a>
-
             <main id="main-content" className="px-4 pb-20 pt-10 sm:px-6 lg:px-8">
                 <header className="mx-auto max-w-2xl text-center">
                     <p className="text-sm font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400">

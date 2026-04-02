@@ -204,7 +204,7 @@ export default function Parking() {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
         <Header />
-        <div className="mx-auto max-w-6xl space-y-6 p-6">
+        <main id="main-content" className="mx-auto max-w-6xl space-y-6 p-6">
           {/* Page Title */}
           <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">
             Parking Availability
@@ -245,6 +245,7 @@ export default function Parking() {
                 return (
                   <li key={lot.name}>
                     <button
+                      type="button"
                       onClick={async () => {
                         setSelectedParkingLot(lot);
 
@@ -269,7 +270,7 @@ export default function Parking() {
   
           </div>
   
-        </div>
+        </main>
       </div>
     );
 }

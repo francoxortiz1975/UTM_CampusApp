@@ -106,7 +106,10 @@ export default function MapPage() {
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff6ea,transparent_35%),radial-gradient(circle_at_bottom_right,#dbeafe,transparent_30%),linear-gradient(to_bottom,#f8fafc,#eef2ff)] dark:bg-[radial-gradient(circle_at_top,#2a2114,transparent_35%),radial-gradient(circle_at_bottom_right,#172554,transparent_30%),linear-gradient(to_bottom,#09090b,#18181b)]">
             <Header />
 
-            <main className="mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+            <main
+                id="main-content"
+                className="mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-16 pt-8 sm:px-6 lg:px-8"
+            >
                 <section className="grid gap-6 lg:grid-cols-[1.45fr_0.95fr]">
                     <div className="overflow-hidden rounded-[28px] border border-white/70 bg-white/80 p-6 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/80 dark:shadow-black/30">
                         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -125,13 +128,17 @@ export default function MapPage() {
                             </div>
 
                             <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
-                                <Compass className="size-4" />
+                                <Compass className="size-4" aria-hidden />
                                 Click a building to inspect it
                             </div>
                         </div>
 
                         <div className="mt-6 rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#f4f1ea_0%,#efeadd_100%)] p-4 dark:border-zinc-700 dark:bg-[linear-gradient(180deg,#27272a_0%,#18181b_100%)]">
-                            <div className="relative min-h-[440px] overflow-hidden rounded-[20px] border border-white/80 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.9),transparent_18%),linear-gradient(135deg,#cbd5e1_0%,#e2e8f0_40%,#bfdbfe_100%)] shadow-inner dark:border-zinc-600 dark:bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.06),transparent_18%),linear-gradient(135deg,#1f2937_0%,#111827_45%,#172554_100%)]">
+                            <div
+                                role="region"
+                                aria-label="Campus map, select a building"
+                                className="relative min-h-[440px] overflow-hidden rounded-[20px] border border-white/80 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.9),transparent_18%),linear-gradient(135deg,#cbd5e1_0%,#e2e8f0_40%,#bfdbfe_100%)] shadow-inner dark:border-zinc-600 dark:bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.06),transparent_18%),linear-gradient(135deg,#1f2937_0%,#111827_45%,#172554_100%)]"
+                            >
                                 <div className="absolute inset-x-[7%] top-[9%] h-[12%] rounded-full border border-white/50 bg-white/20 dark:border-zinc-500/60 dark:bg-white/5" />
                                 <div className="absolute inset-x-[10%] top-[39%] h-[7%] rounded-full border border-white/40 bg-white/15 dark:border-zinc-500/50 dark:bg-white/5" />
                                 <div className="absolute left-[45%] top-[8%] h-[78%] w-[8%] rounded-full border border-white/40 bg-white/20 dark:border-zinc-500/50 dark:bg-white/5" />
@@ -145,7 +152,9 @@ export default function MapPage() {
                                             key={building.id}
                                             type="button"
                                             onClick={() => setSelectedId(building.id)}
-                                            className={`absolute rounded-2xl border px-3 py-2 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 dark:focus:ring-offset-zinc-900 ${
+                                            aria-pressed={isSelected}
+                                            aria-label={`${building.name}, ${building.label}`}
+                                            className={`absolute rounded-2xl border px-3 py-2 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:focus:ring-offset-zinc-900 ${
                                                 isSelected
                                                     ? 'border-gray-900 ring-2 ring-gray-900/20 dark:border-white dark:ring-white/20'
                                                     : 'border-transparent'
@@ -185,7 +194,7 @@ export default function MapPage() {
                                 </h2>
                             </div>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
-                                <MapPinned className="size-5 text-slate-700 dark:text-zinc-200" />
+                                <MapPinned className="size-5 text-slate-700 dark:text-zinc-200" aria-hidden />
                             </div>
                         </div>
 
@@ -269,7 +278,7 @@ export default function MapPage() {
                 </section>
 
                 <div className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-300">
-                    <Navigation className="size-4" />
+                    <Navigation className="size-4" aria-hidden />
                     This is a frontend scaffold only. Backend integration and richer campus
                     data can be layered on later this week.
                 </div>
