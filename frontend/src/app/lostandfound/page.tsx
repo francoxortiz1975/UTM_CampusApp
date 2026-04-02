@@ -8,39 +8,24 @@ const apiBase =
     ? 'http://127.0.0.1:5001'
     : 'http://localhost:5001';
 
-type LostFoundItem = {
-  id: number;
-  user_id: number;
-  current_user_id?: number;
-  item: string;
-  desc: string;
-  created_at: string;
-};
-
-type LostFoundComment = {
-  id: number;
-  comment: string;
-  user_id: number;
-};
-
 export default function LostAndFound() {
-  const [items, setItems] = useState<LostFoundItem[]>([]);
+  const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState(null);
   const [editItem, setEditItem] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   // Comments state
-  const [activeItemId, setActiveItemId] = useState<number | null>(null);
-  const [comments, setComments] = useState<Record<number, LostFoundComment[]>>({});
+  const [activeItemId, setActiveItemId] = useState(null); // which item’s comments are open
+  const [comments, setComments] = useState({}); // { itemId: [comments] }
   const [newComment, setNewComment] = useState("");
 
   // ---------------- Date Formatting ----------------
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -57,11 +42,7 @@ export default function LostAndFound() {
       const data = await res.json();
 
       // Sort newest first
-      setItems(
-        (data as LostFoundItem[]).sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        ),
-      );
+      setItems(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
     } catch (err) {
       console.error("Error fetching items:", err);
     }
@@ -72,7 +53,7 @@ export default function LostAndFound() {
       const res = await fetch(`${apiBase}/me`, { credentials: "include" });
       if (!res.ok) return;
       const data = await res.json();
-      setCurrentUserId(typeof data.id === "number" ? data.id : null);
+      setCurrentUserId(data.id);
     } catch (err) {
       console.error("Error fetching user:", err);
     }
@@ -82,15 +63,6 @@ export default function LostAndFound() {
     fetchItems();
     fetchCurrentUser();
   }, []);
-
-  useEffect(() => {
-    if (!showModal) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowModal(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showModal]);
 
   // ---------------- CRUD Operations ----------------
   const createItem = async () => {
@@ -120,7 +92,7 @@ export default function LostAndFound() {
     }
   };
 
-  const updateItem = async (id: number) => {
+  const updateItem = async (id) => {
     try {
       const res = await fetch(`${apiBase}/lostandfound/update`, {
         method: "POST",
@@ -137,7 +109,7 @@ export default function LostAndFound() {
     }
   };
 
-  const deleteItem = async (id: number) => {
+  const deleteItem = async (id) => {
     try {
       const res = await fetch(`${apiBase}/lostandfound/delete/${id}`, {
         method: "GET",
@@ -152,7 +124,7 @@ export default function LostAndFound() {
   };
 
   // ---------------- Comments ----------------
-  const toggleComments = async (itemId: number) => {
+  const toggleComments = async (itemId) => {
     if (activeItemId === itemId) {
       setActiveItemId(null);
       return;
@@ -166,14 +138,14 @@ export default function LostAndFound() {
         const res = await fetch(`${apiBase}/lostandfound/${itemId}/comments`, { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json();
-        setComments((prev) => ({ ...prev, [itemId]: data as LostFoundComment[] }));
+        setComments((prev) => ({ ...prev, [itemId]: data }));
       } catch (err) {
         console.error("Error fetching comments:", err);
       }
     }
   };
 
-  const postComment = async (itemId: number) => {
+  const postComment = async (itemId) => {
     if (!newComment) return;
 
     try {
@@ -189,7 +161,7 @@ export default function LostAndFound() {
 
       setComments((prev) => ({
         ...prev,
-        [itemId]: [...(prev[itemId] || []), data as LostFoundComment],
+        [itemId]: [...(prev[itemId] || []), data],
       }));
       setNewComment("");
     } catch (err) {
@@ -209,9 +181,8 @@ export default function LostAndFound() {
         <div className="flex justify-between items-center">
           <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Lost & Found</h1>
           <button
-            type="button"
             onClick={() => setShowModal(true)}
-            className="rounded-xl bg-blue-600 px-5 py-2 text-white shadow hover:bg-blue-700"
+            className="bg-blue-600 text-white px-5 py-2 rounded-xl hover:bg-blue-700 shadow"
           >
             + New Item
           </button>
@@ -242,15 +213,13 @@ export default function LostAndFound() {
                     />
                     <div className="flex gap-2">
                       <button
-                        type="button"
-                        className="rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
                         onClick={() => updateItem(item.id)}
                       >
                         Save
                       </button>
                       <button
-                        type="button"
-                        className="rounded bg-gray-400 px-3 py-1 text-white hover:bg-gray-500 dark:bg-zinc-700 dark:hover:bg-zinc-600"
+                        className="bg-gray-400 hover:bg-gray-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-white px-3 py-1 rounded"
                         onClick={() => setEditingId(null)}
                       >
                         Cancel
@@ -260,10 +229,10 @@ export default function LostAndFound() {
                 ) : (
                   <>
                     {/* Title + Date */}
-                    <div className="mb-1 flex items-start justify-between">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
+                    <div className="flex justify-between items-start mb-1">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
                         {item.item}
-                      </h3>
+                      </h2>
                       <span
                         className="text-xs text-gray-400 dark:text-zinc-500"
                         title={new Date(item.created_at).toLocaleString()}
@@ -277,8 +246,7 @@ export default function LostAndFound() {
                     <div className="flex justify-between">
                       {isOwner && (
                         <button
-                          type="button"
-                          className="text-sm font-medium text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400"
+                          className="text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 text-sm font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingId(item.id);
@@ -291,8 +259,7 @@ export default function LostAndFound() {
                       )}
                       {isOwner && (
                         <button
-                          type="button"
-                          className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-500 dark:hover:text-red-400"
+                          className="text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 text-sm font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteItem(item.id);
@@ -315,21 +282,16 @@ export default function LostAndFound() {
                           </div>
                         ))}
 
-                        <div className="mt-3 flex gap-2">
-                          <label htmlFor={`lost-comment-${item.id}`} className="sr-only">
-                            {`Add a comment on ${item.item}`}
-                          </label>
+                        <div className="flex mt-3 gap-2">
                           <input
-                            id={`lost-comment-${item.id}`}
-                            className="flex-1 rounded border bg-gray-50 px-2 py-1 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                            className="border dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded px-2 py-1 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Add a comment..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()} // prevent toggle
                           />
                           <button
-                            type="button"
-                            className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
                             onClick={(e) => {
                               e.stopPropagation();
                               postComment(item.id);
@@ -348,69 +310,44 @@ export default function LostAndFound() {
         </div>
 
         {items.length === 0 && (
-          <p className="py-10 text-center text-gray-500 dark:text-zinc-400">No lost & found items.</p>
+          <p className="text-gray-500 dark:text-zinc-400 text-center py-10">No lost & found items.</p>
         )}
-      </main>
+      </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-lost-item-title"
-            className="w-full max-w-md space-y-4 rounded-2xl border border-transparent bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
-          >
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 border border-transparent dark:border-zinc-800">
             {errorMsg && (
-              <div
-                role="alert"
-                aria-live="assertive"
-                className="rounded-lg bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              >
+              <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
                 {errorMsg}
               </div>
             )}
 
-            <h2 id="add-lost-item-title" className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">
-              Add New Item
-            </h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100">Add New Item</h2>
 
-            <div>
-              <label htmlFor="new-lost-item-name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                Item name
-              </label>
-              <input
-                id="new-lost-item-name"
-                className="w-full rounded-lg border bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-                placeholder="Item Name"
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="new-lost-item-desc" className="mb-1 block text-sm font-medium text-gray-700 dark:text-zinc-300">
-                Description
-              </label>
-              <textarea
-                id="new-lost-item-desc"
-                className="min-h-[100px] w-full resize-y rounded-lg border bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-                placeholder="Description"
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-              />
-            </div>
+            <input
+              className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Item Name"
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+            />
+            <textarea
+              className="border dark:border-zinc-700 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 w-full min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Description"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               <button
-                type="button"
-                className="rounded-lg bg-gray-200 px-5 py-2 text-gray-800 hover:bg-gray-300 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                className="bg-gray-200 hover:bg-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 px-5 py-2 rounded-lg"
                 onClick={() => setShowModal(false)}
               >
                 Cancel
               </button>
               <button
-                type="button"
-                className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
                 onClick={createItem}
               >
                 Add
