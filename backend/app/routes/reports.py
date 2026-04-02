@@ -132,7 +132,7 @@ def get_average(month, day, time, page, name):
                     print("Original avg: ", FOOD_BASELINE[time], "New avg: ", avg)
             elif page == 'gym':
                 avg = GYM_BASELINE[time]
-        else: 
+        else:
             if current_people != 0:
                 avg = 0.75 * (total / len(reports)) + 0.25 * (current_people * 2)
                 print("Original avg: ", total / len(reports), "New avg: ", avg)
@@ -269,6 +269,7 @@ def create_report():
 
     status = StatusReport(report.to_dict(), StatusCode.CREATED)
     return status.json(), status.code()
+
 
 
 @reports_bp.route("/scanner", methods=["POST"], strict_slashes=False)

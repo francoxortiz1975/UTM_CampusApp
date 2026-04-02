@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Boldonse } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -26,6 +26,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const boldonse = Boldonse({
+  variable: "--font-boldonse",
+  subsets: ["latin"],
+  weight: "400",
+  adjustFontFallback: false,
+});
+
 export const metadata: Metadata = {
   title: "Campus Dashboard",
   description:
@@ -40,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${boldonse.variable} antialiased`}
       >
         <Script
           id="theme-init"

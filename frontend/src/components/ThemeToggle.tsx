@@ -52,7 +52,7 @@ export default function ThemeToggle() {
   };
 
   const buttonClass =
-    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700';
+    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-200/45 bg-blue-300/15 text-white backdrop-blur-sm hover:border-blue-100/60 hover:bg-blue-300/25 dark:border-blue-200/35 dark:bg-blue-300/10 dark:hover:bg-blue-300/20';
 
   if (!mounted) {
     return (

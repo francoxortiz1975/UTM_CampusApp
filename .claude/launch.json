@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "frontend"
+    },
+    {
+      "name": "Flask Backend",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app.py"],
+      "port": 5001,
+      "cwd": "backend"
+    }
+  ]
+}
