@@ -273,20 +273,9 @@ export default function MapPage() {
                                             key={building.id}
                                             role="button"
                                             tabIndex={0}
-                                            aria-label={`Show ${building.name}`}
-                                            onClick={() => setSelectedId(building.id)}
-                                            aria-pressed={isSelected}
                                             aria-label={`${building.name}, ${building.label}`}
-                                            className={`absolute rounded-2xl border px-3 py-2 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:focus:ring-offset-zinc-900 ${
-                                                isSelected
-                                                    ? 'border-gray-900 ring-2 ring-gray-900/20 dark:border-white dark:ring-white/20'
-                                                    : 'border-transparent'
-                                            } ${building.accent}`}
-                                            style={{
-                                                left: `${building.position.left}%`,
-                                                top: `${building.position.top}%`,
-                                                width: `${building.position.width}%`,
-                                                height: `${building.position.height}%`,
+                                            aria-pressed={isSelected}
+                                            onClick={() => setSelectedId(building.id)}
                                             onKeyDown={(event) => {
                                                 if (event.key === 'Enter' || event.key === ' ') {
                                                     event.preventDefault();

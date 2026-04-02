@@ -350,7 +350,7 @@ export default function LostAndFound() {
         {items.length === 0 && (
           <p className="py-10 text-center text-gray-500 dark:text-zinc-400">No lost & found items.</p>
         )}
-      </main>
+      </div>
 
       {/* Modal */}
       {showModal && (

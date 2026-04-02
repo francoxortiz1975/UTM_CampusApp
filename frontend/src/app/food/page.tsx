@@ -766,9 +766,6 @@ export default function FoodCourtPage() {
       <Header />
 
       <main id="main-content" className="mx-auto max-w-4xl space-y-6 p-6">
-      
-      <div className="relative z-10 mx-auto max-w-4xl space-y-6 p-6">
-        
         {/* Page Title */}
         <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">Campus Food</h1>
 

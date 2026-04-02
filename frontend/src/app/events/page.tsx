@@ -419,7 +419,7 @@ export default function EventsPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Event Detail Modal */}
       {selectedEvent && (
