@@ -275,6 +275,18 @@ export default function MapPage() {
                                             tabIndex={0}
                                             aria-label={`Show ${building.name}`}
                                             onClick={() => setSelectedId(building.id)}
+                                            aria-pressed={isSelected}
+                                            aria-label={`${building.name}, ${building.label}`}
+                                            className={`absolute rounded-2xl border px-3 py-2 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:focus:ring-offset-zinc-900 ${
+                                                isSelected
+                                                    ? 'border-gray-900 ring-2 ring-gray-900/20 dark:border-white dark:ring-white/20'
+                                                    : 'border-transparent'
+                                            } ${building.accent}`}
+                                            style={{
+                                                left: `${building.position.left}%`,
+                                                top: `${building.position.top}%`,
+                                                width: `${building.position.width}%`,
+                                                height: `${building.position.height}%`,
                                             onKeyDown={(event) => {
                                                 if (event.key === 'Enter' || event.key === ' ') {
                                                     event.preventDefault();
@@ -323,7 +335,7 @@ export default function MapPage() {
                                 </h2>
                             </div>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-zinc-700 dark:bg-zinc-950">
-                                <MapPinned className="size-5 text-slate-700 dark:text-zinc-200" />
+                                <MapPinned className="size-5 text-slate-700 dark:text-zinc-200" aria-hidden />
                             </div>
                         </div>
 
@@ -372,6 +384,43 @@ export default function MapPage() {
                         </div>
                     </aside>
                 </section>
+
+                <section className="grid gap-4 rounded-[28px] border border-white/70 bg-white/75 p-5 shadow-lg shadow-slate-200/50 backdrop-blur dark:border-zinc-700/70 dark:bg-zinc-900/80 dark:shadow-black/20 md:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                            Why this placeholder is useful
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
+                            It gives the team a visible map route, a stable building data
+                            shape, and a UI surface to iterate on without waiting on backend
+                            dependencies.
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                            Building labels included
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
+                            IB, DV, DH, KN, and RAWC are all clickable so the story already
+                            demonstrates the intended interaction model.
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-950/70">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                            Existing feature integration
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-zinc-300">
+                            Each selected building points users back into food, gym, parking,
+                            or events so this feature already fits the rest of the dashboard.
+                        </p>
+                    </div>
+                </section>
+
+                <div className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-300">
+                    <Navigation className="size-4" aria-hidden />
+                    This is a frontend scaffold only. Backend integration and richer campus
+                    data can be layered on later this week.
+                </div>
             </main>
         </div>
     );

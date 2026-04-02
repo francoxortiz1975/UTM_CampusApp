@@ -26,7 +26,7 @@ export default function SignIn() {
         <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-50 dark:from-zinc-950 dark:to-zinc-900">
             <Header />
             {/* Sign In form container */}
-            <main className="mt-16 flex items-center justify-center px-4">
+            <main id="main-content" className="mt-16 flex items-center justify-center px-4">
                 <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md dark:bg-zinc-900 dark:shadow-zinc-950/50">
                     {/* Form title */}
                     <h1 className="mb-6 text-center text-3xl font-bold text-black dark:text-zinc-100">
@@ -36,11 +36,17 @@ export default function SignIn() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Email input section */}
                         <div>
-                            <label className="mb-2 block font-medium text-black dark:text-zinc-200">
+                            <label
+                                htmlFor="signin-email"
+                                className="mb-2 block font-medium text-black dark:text-zinc-200"
+                            >
                                 Email
                             </label>
                             <input
+                                id="signin-email"
                                 type="email"
+                                name="email"
+                                autoComplete="username"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
@@ -50,11 +56,17 @@ export default function SignIn() {
                         </div>
                         {/* Password input section */}
                         <div>
-                            <label className="mb-2 block font-medium text-black dark:text-zinc-200">
+                            <label
+                                htmlFor="signin-password"
+                                className="mb-2 block font-medium text-black dark:text-zinc-200"
+                            >
                                 Password
                             </label>
                             <input
+                                id="signin-password"
                                 type="password"
+                                name="password"
+                                autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required

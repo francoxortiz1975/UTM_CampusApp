@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Profile, Logout } from '../types/Authentication';
 import { useState, useEffect } from 'react';
@@ -37,8 +38,11 @@ export default function Header({ backHref = '/', backLabel = '← Back' }: Heade
 
     if (loading) {
         return (
-            <header className="bg-[linear-gradient(135deg,#1d4ed8_0%,#0f2f6b_100%)] p-6 text-white">
-                <span>Loading...</span>
+            <header
+                className="flex items-center justify-between bg-white p-6 text-gray-900 shadow dark:bg-zinc-900 dark:text-zinc-100"
+                aria-busy="true"
+            >
+                <span aria-live="polite">Loading...</span>
                 <ThemeToggle />
             </header>
         );
