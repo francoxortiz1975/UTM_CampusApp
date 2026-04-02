@@ -416,6 +416,24 @@ const RESTAURANTS: Restaurant[] = [
     hours: { monThu: '8am-4pm', fri: '8am-2pm' },
     imagePlaceholderColor: 'bg-orange-200'
   },
+  {
+    id: '44',
+    name: 'The Blind Duck Pub',
+    building: 'Student Centre (SC)',
+    waitTime: 6,
+    tags: ['Pub', 'Burgers', 'Late Night'],
+    hours: { monThu: '11am - 10pm', fri: '11am - 11pm' },
+    imagePlaceholderColor: 'bg-amber-200'
+  },
+  {
+    id: '45',
+    name: 'Chatime',
+    building: 'Student Centre (SC)',
+    waitTime: 4,
+    tags: ['Bubble Tea', 'Drinks', 'Snacks'],
+    hours: { monThu: '11am - 8pm', fri: '11am - 7pm' },
+    imagePlaceholderColor: 'bg-pink-200'
+  },
 ];
 
 // --- Helpers ---
@@ -435,9 +453,15 @@ const today = new Date().toLocaleDateString(undefined, {
 
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 const FOOD_OVERRIDES_KEY = 'placeholder:foodWaitOverrides';
+
+function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
 
 function buildFoodTrendData(current: number): { time: string; wait: number }[] {
   const cap = (value: number) => Math.max(0, Math.min(60, value));
@@ -482,7 +506,7 @@ function FoodCard({
     }
 
     try {
-      const result = await fetch(`${apiBase}/reports/`, {
+      const result = await fetchWithTimeout(`${apiBase}/reports/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -659,7 +683,7 @@ async function getReport(res_id: string, time: number): Promise<number> {
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/${time}/food/${res_id}`);
+    const res = await fetchWithTimeout(`${apiBase}/reports/${month}/${weekday}/${time}/food/${res_id}`);
     if (!res.ok) return 10;
 
     const payload = await res.json();
@@ -675,7 +699,7 @@ async function getFullDayReport(location: string): Promise<{ time: string; capac
   const weekday = now.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 
   try {
-    const res = await fetch(`${apiBase}/reports/${month}/${weekday}/food/${location}`);
+    const res = await fetchWithTimeout(`${apiBase}/reports/${month}/${weekday}/food/${location}`);
 
     const payload = await res.json();
     return payload;
@@ -735,12 +759,18 @@ export default function FoodCourtPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-zinc-950">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0b0c10] dark:text-zinc-100">
+      <div className="pointer-events-none absolute -left-20 -top-16 h-80 w-80 rounded-full bg-white/70 blur-3xl dark:bg-white/10" />
+      <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-amber-200/30 blur-3xl dark:bg-amber-600/10" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
 
       <main id="main-content" className="mx-auto max-w-4xl space-y-6 p-6">
+      
+      <div className="relative z-10 mx-auto max-w-4xl space-y-6 p-6">
+        
         {/* Page Title */}
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-zinc-100">Campus Food</h1>
+        <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">Campus Food</h1>
 
         {/* Selected Card (Popup/Detail View) */}
         {selectedRestaurant && (

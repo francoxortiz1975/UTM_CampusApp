@@ -20,8 +20,8 @@ const admins = [1, 9]; // Hard-coded admin user IDs
 
 const apiBase =
   typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
-    ? 'http://127.0.0.1:5000'
-    : 'http://localhost:5000';
+    ? 'http://127.0.0.1:5001'
+    : 'http://localhost:5001';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -275,11 +275,19 @@ export default function EventsPage() {
 
   // ---------------- Render ----------------
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900 dark:bg-[#0b0c10] dark:text-zinc-100">
+      <div className="pointer-events-none absolute -left-20 -top-16 h-80 w-80 rounded-full bg-white/70 blur-3xl dark:bg-white/10" />
+      <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-violet-200/30 blur-3xl dark:bg-violet-600/10" />
+      <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
 
-      <main id="main-content" className="flex w-full gap-6 px-6 pt-6">
-        <h1 className="sr-only">Event calendar</h1>
+      <div className="relative z-10 mx-auto max-w-5xl px-6 pt-8">
+        <h1 className="font-display bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-3xl font-bold leading-[1.28] text-transparent dark:from-violet-300 dark:to-fuchsia-300">
+          Event Calendar
+        </h1>
+      </div>
+
+      <div className="relative z-10 flex w-full pt-6 px-6 gap-6">
         {/* Sidebar */}
         <aside
           aria-label="Calendar filters and actions"
@@ -288,7 +296,7 @@ export default function EventsPage() {
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="w-full rounded-lg bg-indigo-600 py-2 text-white hover:bg-indigo-700"
+            className="w-full rounded-lg border border-blue-200/50 bg-blue-300/15 py-2 font-medium text-blue-950 backdrop-blur-sm transition-all hover:border-blue-200/70 hover:bg-blue-300/25 dark:border-blue-200/30 dark:bg-blue-300/10 dark:text-white dark:hover:bg-blue-300/20"
           >
             + Request Event
           </button>
@@ -297,8 +305,7 @@ export default function EventsPage() {
             <button
               type="button"
               onClick={() => setReviewPending(prev => !prev)}
-              aria-pressed={reviewPending}
-              className="w-full rounded-lg bg-yellow-500 py-2 text-white hover:bg-yellow-600"
+              className="w-full rounded-lg border border-amber-200/50 bg-amber-300/15 py-2 font-medium text-amber-950 backdrop-blur-sm transition-all hover:border-amber-200/70 hover:bg-amber-300/25 dark:border-amber-200/30 dark:bg-amber-300/10 dark:text-white dark:hover:bg-amber-300/20"
             >
               Review Pending
             </button>
@@ -340,7 +347,7 @@ export default function EventsPage() {
 
           <Link
             href="/eventshuffle"
-            className="block w-full text-center bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-2 rounded-lg hover:bg-black dark:hover:bg-white"
+            className="block w-full rounded-lg border border-slate-300/70 bg-slate-200/70 py-2 text-center font-medium text-slate-800 backdrop-blur-sm transition-all hover:border-slate-400/80 hover:bg-slate-200/90 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
           >
             Open Event Shuffle
           </Link>

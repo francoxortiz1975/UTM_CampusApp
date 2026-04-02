@@ -66,6 +66,11 @@ def delete_post(id):
         status = StatusReport("No matching id", StatusCode.BAD_REQUEST)
         return status.json(), status.code()
     
+    all_comments = Comments.get_all_by_post_id(id)
+    for comment in all_comments:
+        if not Comments.delete_by_id(comment.id):
+            print("BOOOO")
+    
     status = StatusReport("Deleted", StatusCode.OK)
     return status.json(), status.code()
 
