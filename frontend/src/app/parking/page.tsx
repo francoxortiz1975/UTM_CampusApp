@@ -207,7 +207,6 @@ export default function Parking() {
         <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-blue-200/30 blur-3xl dark:bg-blue-600/10" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
         <Header />
-        <main id="main-content" className="mx-auto max-w-6xl space-y-6 p-6">
         <div className="relative z-10 mx-auto max-w-6xl space-y-6 p-6">
           {/* Page Title */}
           <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-blue-500 to-sky-500 bg-clip-text text-transparent">
@@ -249,7 +248,6 @@ export default function Parking() {
                 return (
                   <li key={lot.name}>
                     <button
-                      type="button"
                       onClick={async () => {
                         setSelectedParkingLot(lot);
 
@@ -274,7 +272,7 @@ export default function Parking() {
   
           </div>
   
-        </main>
+        </div>
       </div>
     );
 }

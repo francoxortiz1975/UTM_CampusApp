@@ -1,15 +1,4 @@
-type WeeklyPoint = { day: string; weekday: number; weekend: number };
-
-type VenueData = {
-  name: string;
-  location: string;
-  capacity: number;
-  isOpen: boolean;
-  waitTime: string;
-  openingHours: string;
-  color: string;
-  weeklyData: WeeklyPoint[];
-};
+import { VenueData } from '@/src/components/AvailabilityCard';
 
 // Mock data for gyms
 export const gymData: VenueData[] = [

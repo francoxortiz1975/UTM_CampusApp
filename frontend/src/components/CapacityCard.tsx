@@ -146,20 +146,13 @@ export default function CapacityCard({
 
         {location && (
           <div className="flex items-center text-xl font-semibold text-black dark:text-zinc-100">
-            <span>
-              {location}{' '}
-              <span aria-hidden="true">📍</span>
-            </span>
+            <span>{location} 📍</span>
           </div>
         )}
       </div>
 
       {/* Chart */}
-      <div
-        className="mb-6 h-56 w-full text-indigo-600 dark:text-indigo-400"
-        role="img"
-        aria-label={`Capacity over time for ${title}`}
-      >
+      <div className="mb-6 h-56 w-full text-indigo-600 dark:text-indigo-400">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <XAxis
@@ -198,7 +191,6 @@ export default function CapacityCard({
       {/* Report Button */}
       <div className="flex justify-end">
         <button
-          type="button"
           onClick={handleReportStatusClick}
           className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600"
         >
@@ -244,7 +236,6 @@ export default function CapacityCard({
           max={100}
           value={capacity}
           onChange={(e) => setCapacity(Number(e.target.value))}
-          aria-label="Reported capacity percentage"
           className="h-2 w-full cursor-pointer rounded-lg bg-gray-300 dark:bg-zinc-600"
         />
       </Modal>
