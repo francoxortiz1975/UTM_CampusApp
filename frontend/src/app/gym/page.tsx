@@ -134,7 +134,7 @@ export default function Gym() {
       <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-emerald-200/30 blur-3xl dark:bg-emerald-600/10" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-200/40 blur-3xl dark:bg-zinc-500/10" />
       <Header />
-      <div className="relative z-10 mx-auto max-w-6xl space-y-6 p-6">
+      <main id="main-content" className="mx-auto max-w-6xl space-y-6 p-6">
         {/* Page Title */}
         <h1 className="font-display pb-1 text-3xl leading-[1.28] font-bold bg-gradient-to-r from-emerald-500 to-lime-500 bg-clip-text text-transparent">
           Gym Availability

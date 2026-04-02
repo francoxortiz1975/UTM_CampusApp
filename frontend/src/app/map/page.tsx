@@ -273,7 +273,8 @@ export default function MapPage() {
                                             key={building.id}
                                             role="button"
                                             tabIndex={0}
-                                            aria-label={`Show ${building.name}`}
+                                            aria-label={`${building.name}, ${building.label}`}
+                                            aria-pressed={isSelected}
                                             onClick={() => setSelectedId(building.id)}
                                             onKeyDown={(event) => {
                                                 if (event.key === 'Enter' || event.key === ' ') {
