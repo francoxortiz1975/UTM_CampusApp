@@ -4,11 +4,8 @@ export type User = {
 };
 
 function apiBase(): string {
-    if (typeof window !== "undefined") {
-        const host = window.location.hostname || "localhost";
-        return `http://${host}:5001`;
-    }
-    return "http://localhost:5001";
+    // Same-origin API served by Next.js route handlers (see src/app/api).
+    return "/api";
 }
 
 export async function Signup(email: string, password: string): Promise<User | null> {
