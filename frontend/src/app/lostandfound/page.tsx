@@ -8,24 +8,39 @@ const apiBase =
     ? '/api'
     : '/api';
 
+interface LostFoundItem {
+  id: number;
+  item: string;
+  desc: string;
+  created_at: string;
+  user_id: number;
+  current_user_id: number;
+}
+
+interface LostFoundComment {
+  id: number;
+  comment: string;
+  user_id: number;
+}
+
 export default function LostAndFound() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<LostFoundItem[]>([]);
   const [newItem, setNewItem] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editItem, setEditItem] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   // Comments state
-  const [activeItemId, setActiveItemId] = useState(null); // which item’s comments are open
-  const [comments, setComments] = useState({}); // { itemId: [comments] }
+  const [activeItemId, setActiveItemId] = useState<number | null>(null); // which item’s comments are open
+  const [comments, setComments] = useState<Record<number, LostFoundComment[]>>({}); // { itemId: [comments] }
   const [newComment, setNewComment] = useState("");
 
   // ---------------- Date Formatting ----------------
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -42,7 +57,12 @@ export default function LostAndFound() {
       const data = await res.json();
 
       // Sort newest first
-      setItems(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+      setItems(
+        data.sort(
+          (a: LostFoundItem, b: LostFoundItem) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+      );
     } catch (err) {
       console.error("Error fetching items:", err);
     }
@@ -92,7 +112,7 @@ export default function LostAndFound() {
     }
   };
 
-  const updateItem = async (id) => {
+  const updateItem = async (id: number) => {
     try {
       const res = await fetch(`${apiBase}/lostandfound/update`, {
         method: "POST",
@@ -109,7 +129,7 @@ export default function LostAndFound() {
     }
   };
 
-  const deleteItem = async (id) => {
+  const deleteItem = async (id: number) => {
     try {
       const res = await fetch(`${apiBase}/lostandfound/delete/${id}`, {
         method: "GET",
@@ -124,7 +144,7 @@ export default function LostAndFound() {
   };
 
   // ---------------- Comments ----------------
-  const toggleComments = async (itemId) => {
+  const toggleComments = async (itemId: number) => {
     if (activeItemId === itemId) {
       setActiveItemId(null);
       return;
@@ -145,7 +165,7 @@ export default function LostAndFound() {
     }
   };
 
-  const postComment = async (itemId) => {
+  const postComment = async (itemId: number) => {
     if (!newComment) return;
 
     try {
