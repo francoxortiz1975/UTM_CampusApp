@@ -1,6 +1,8 @@
 # Campus Dashboard — CSC301 Group Project
 
-**🔗 Live demo: [TODO — paste Vercel URL here]**
+**🔗 Live demo: [utm-campus-app.vercel.app](https://utm-campus-app.vercel.app)**
+
+> The live demo runs on a mock, in-memory API (Next.js route handlers) that reproduces the Flask backend's behavior with seeded sample data — no separate server required. See [`frontend/src/lib/mock.ts`](frontend/src/lib/mock.ts).
 
 A full-stack campus services hub that brings food availability, gym and parking occupancy, events, an interactive map, and a lost-and-found board into a single web experience. The system combines a **Next.js** web app, a **Flask** API with session-based authentication, and an optional **computer-vision scanner** that feeds live crowd estimates into the backend.
 
