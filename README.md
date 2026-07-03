@@ -6,6 +6,16 @@
 
 A full-stack campus services hub that brings food availability, gym and parking occupancy, events, an interactive map, and a lost-and-found board into a single web experience. The system combines a **Next.js** web app, a **Flask** API with session-based authentication, and an optional **computer-vision scanner** that feeds live crowd estimates into the backend.
 
+## Screenshots
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+| | |
+|---|---|
+| ![Interactive campus map](docs/screenshots/map.png) | ![Sign in](docs/screenshots/signin.png) |
+| ![Campus food wait times](docs/screenshots/food.png) | ![Lost and found](docs/screenshots/lostandfound.png) |
+| ![Day planner](docs/screenshots/planner.png) | ![Event shuffle](docs/screenshots/eventshuffle.png) |
+
 ## Repository layout
 
 | Directory | Role |
